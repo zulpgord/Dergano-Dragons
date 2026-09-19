@@ -159,7 +159,7 @@ export default function AuthPage() {
             <input
               type="text"
               name="name"
-              placeholder="Nome del tuo Eroe"
+              placeholder="Nome giocatore"
               value={formData.name}
               onChange={handleChange}
               required={!isLogin}
