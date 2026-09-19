@@ -148,7 +148,7 @@ function SessionsSection({ locations }) {
 
   const [allSessions, setAllSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
-  const [rangeMode, setRangeMode] = useState('settimana'); // 'settimana' | 'mese'
+  const [rangeMode, setRangeMode] = useState('mese'); // 'settimana' | 'mese'
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
   const [calMonth, setCalMonth] = useState(() => {
     const n = new Date();
