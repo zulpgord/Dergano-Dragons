@@ -363,6 +363,41 @@ button.border-indigo-600 { color: var(--gold) !important; }
   .calendar-side-art-wrap { display: none; }
 }
 
+/* ── Splash mobile: party art alternato con "clicca qui" ── */
+.mobile-party-splash { display: none; }
+.calendar-hide-mobile { }
+@media (max-width: 1150px) {
+  .mobile-party-splash {
+    display: block;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border);
+  }
+  .mobile-party-splash img {
+    display: block;
+    width: 100%;
+    height: min(58vh, 420px);
+    object-fit: cover;
+  }
+  .mobile-party-splash-caption {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 16px;
+    background: linear-gradient(0deg, rgba(44,32,17,0.88), rgba(44,32,17,0));
+    color: #fffdf6;
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+  .calendar-hide-mobile { display: none; }
+}
+
 /* ── Barra di riempimento (progress fill) ── */
 .fill-track {
   width: 100%;
