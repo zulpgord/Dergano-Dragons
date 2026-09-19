@@ -5,11 +5,11 @@ import { shiftsAPI, assignmentsAPI } from '../services/api';
 // ── Header logo fantasy: solo drago (contiene già dado e titolo) ───────────
 function DerganoHeader() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '54px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '70px' }}>
       <img
         src="/drago.png"
         alt="Dergano & Dragons"
-        style={{ height: '54px', width: 'auto', objectFit: 'contain' }}
+        style={{ height: '70px', width: 'auto', objectFit: 'contain' }}
       />
       <div className="dg-header-sep" style={{ width: '1px', height: '32px', background: '#d9c99e', flexShrink: 0 }} />
       <div className="dg-subtitle" style={{
@@ -401,7 +401,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px 16px' }}>
+      <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px 16px' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <button onClick={prevMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: '#a9791a', fontSize: '1.2rem', cursor: 'pointer' }}>‹</button>
@@ -448,7 +448,11 @@ export default function DashboardPage() {
           <>
             {/* ── CALENDARIO ── */}
             {viewMode === 'calendario' && (
-              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
+              <div className="calendar-with-art">
+                <div className="calendar-side-art-wrap">
+                  <img src="/party-sx.jpg" alt="" className="calendar-side-art" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '4px' }}>
                   {DAYS_IT.map(d => (
                     <div key={d} style={{ textAlign: 'center', fontSize: '0.72rem', color: '#9c8a66', padding: '4px', fontFamily: 'Cinzel, serif' }}>{d}</div>
@@ -463,7 +467,7 @@ export default function DashboardPage() {
                       <div
                         key={idx}
                         style={{
-                          minHeight: '92px', borderRadius: '6px', padding: '3px',
+                          minHeight: '104px', borderRadius: '6px', padding: '3px',
                           background: !day ? 'transparent' : isToday ? 'rgba(169,121,26,0.06)' : 'var(--bg-surface)',
                           border: !day ? '1px solid transparent' : isToday ? '1px solid rgba(169,121,26,0.35)' : '1px solid var(--border)',
                         }}
@@ -481,10 +485,10 @@ export default function DashboardPage() {
                                     key={s.id}
                                     onClick={() => setSelectedSession(s)}
                                     style={{
-                                      fontSize: '0.66rem', padding: '2px 4px', borderRadius: '4px', cursor: 'pointer',
+                                      fontSize: '0.74rem', padding: '4px 6px', borderRadius: '5px', cursor: 'pointer',
                                       opacity: s.cancelled ? 0.6 : 1,
                                       background: s.cancelled ? 'rgba(169,121,26,0.12)' : 'var(--bg-page)',
-                                      border: isMySession ? '1.5px solid #2455a4' : isMyWaiting ? '1.5px dashed #a9791a' : '1px solid var(--border)',
+                                      border: isMySession ? '2px solid #2455a4' : isMyWaiting ? '2px dashed #a9791a' : '1px solid var(--border)',
                                     }}
                                   >
                                     <div className="calendar-cell-text" style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
@@ -492,8 +496,8 @@ export default function DashboardPage() {
                                     </div>
                                     <div className="calendar-cell-text" style={{ opacity: 0.7, color: 'var(--text-muted)' }}>{fmt(s.start_time)}–{fmt(s.end_time)}</div>
                                     {!s.cancelled && (
-                                      <div style={{ marginTop: '2px' }}>
-                                        <FillBar current={s.assigned_count} total={s.required_count} height={4} />
+                                      <div style={{ marginTop: '3px' }}>
+                                        <FillBar current={s.assigned_count} total={s.required_count} height={7} />
                                       </div>
                                     )}
                                   </div>
@@ -530,6 +534,10 @@ export default function DashboardPage() {
                   </div>
                   <span style={{ fontSize: '0.72rem', color: '#9c8a66', marginLeft: 'auto', fontStyle: 'italic' }}>Clicca una sessione per aprirla</span>
                 </div>
+                </div>
+                <div className="calendar-side-art-wrap">
+                  <img src="/party-dx.jpg" alt="" className="calendar-side-art" />
+                </div>
               </div>
             )}
 
@@ -561,7 +569,7 @@ export default function DashboardPage() {
                           border: isMySession ? '1.5px solid #2455a4' : isMyWaiting ? '1.5px dashed #a9791a' : '1px solid var(--border)',
                           opacity: s.cancelled ? 0.75 : 1,
                         }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
                                 <span style={{ fontWeight: 700, fontFamily: 'Cinzel, serif', color: s.cancelled ? '#9c8a66' : '#a9791a', fontSize: '0.95rem' }}>
