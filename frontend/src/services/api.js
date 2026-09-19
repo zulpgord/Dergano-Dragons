@@ -75,4 +75,16 @@ export const adminAPI = {
     api.post('/admin/fix-shifts'),
 };
 
+// Groups endpoints
+export const groupsAPI = {
+  getGroups: () =>
+    api.get('/groups'),
+  createGroup: (name) =>
+    api.post('/groups', { name }),
+  deleteGroup: (id) =>
+    api.delete(`/groups/${id}`),
+  setMembers: (id, userIds) =>
+    api.put(`/groups/${id}/members`, { user_ids: userIds }),
+};
+
 export default api;
