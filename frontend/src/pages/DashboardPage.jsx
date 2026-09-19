@@ -257,11 +257,27 @@ export default function DashboardPage() {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+  const [calendarRevealed, setCalendarRevealed] = useState(false);
+  const [partyImg, setPartyImg] = useState('sx');
 
   useEffect(() => {
     if (!user.id) { navigate('/auth'); return; }
     loadSessions();
   }, []);
+
+  // Ogni volta che si apre la vista Calendario (mobile): alterna il party art
+  // sx/dx come schermata di benvenuto, da toccare per rivelare il calendario.
+  useEffect(() => {
+    if (viewMode === 'calendario') {
+      setCalendarRevealed(false);
+      setPartyImg(prev => {
+        const last = localStorage.getItem('dg_party_img');
+        const next = last === 'sx' ? 'dx' : 'sx';
+        localStorage.setItem('dg_party_img', next);
+        return next;
+      });
+    }
+  }, [viewMode]);
 
   const loadSessions = async (silent = false) => {
     try {
@@ -447,8 +463,14 @@ export default function DashboardPage() {
         ) : (
           <>
             {/* ── CALENDARIO ── */}
+            {viewMode === 'calendario' && !calendarRevealed && (
+              <div className="mobile-party-splash" onClick={() => setCalendarRevealed(true)}>
+                <img src={partyImg === 'sx' ? '/party-sx.jpg' : '/party-dx.jpg'} alt="" />
+                <div className="mobile-party-splash-caption">⚔️ Clicca qui per aprire il calendario</div>
+              </div>
+            )}
             {viewMode === 'calendario' && (
-              <div className="calendar-with-art">
+              <div className={`calendar-with-art ${!calendarRevealed ? 'calendar-hide-mobile' : ''}`}>
                 <div className="calendar-side-art-wrap">
                   <img src="/party-sx.jpg" alt="" className="calendar-side-art" />
                 </div>
