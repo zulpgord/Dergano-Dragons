@@ -12,7 +12,8 @@ function DerganoLogo() {
         src="/drago.png"
         alt="Dergano & Dragons"
         style={{
-          width: 'min(80vw, 280px)',
+          width: 'min(88vw, 360px)',
+          maxWidth: '100%',
           height: 'auto',
           objectFit: 'contain',
           filter: 'drop-shadow(0 0 6px rgba(169,121,26,0.15))',
