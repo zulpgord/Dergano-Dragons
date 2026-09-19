@@ -90,15 +90,15 @@ function SessionDetailModal({ session, onClose }) {
           <p style={{ fontSize: '0.85rem', color: '#9c8a66', marginBottom: '18px' }}>Nessuno iscritto ancora.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '18px' }}>
-            {assignedUsers.map((name, i) => (
+            {assignedUsers.map((u, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text, #2c2011)' }}>
                 <span style={{
                   width: '22px', height: '22px', borderRadius: '50%',
                   background: 'rgba(169,121,26,0.14)', border: '1px solid rgba(169,121,26,0.3)',
                   color: '#a9791a', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
-                }}>{name.charAt(0).toUpperCase()}</span>
-                {name}
+                }}>{u.name.charAt(0).toUpperCase()}</span>
+                {u.name}{u.seats > 1 && <span style={{ color: '#9c8a66', fontSize: '0.78rem' }}> — {u.seats} posti</span>}
               </div>
             ))}
           </div>
@@ -111,7 +111,7 @@ function SessionDetailModal({ session, onClose }) {
           <p style={{ fontSize: '0.85rem', color: '#9c8a66' }}>Nessuno in lista d'attesa.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {waitingUsers.map((name, i) => (
+            {waitingUsers.map((u, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-muted, #6b5a3c)' }}>
                 <span style={{
                   width: '22px', height: '22px', borderRadius: '50%',
@@ -119,7 +119,7 @@ function SessionDetailModal({ session, onClose }) {
                   color: '#8a651b', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '0.72rem', fontWeight: 700, flexShrink: 0,
                 }}>{i + 1}</span>
-                {name}
+                {u.name}{u.seats > 1 && <span style={{ fontSize: '0.78rem' }}> — {u.seats} posti</span>}
               </div>
             ))}
           </div>
@@ -444,7 +444,7 @@ function SessionsSection({ locations }) {
               </div>
             )}
             {(s.assigned_users || []).length > 0 && (
-              <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: '#9c8a66' }}>⚔️ {s.assigned_users.join(', ')}</p>
+              <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: '#9c8a66' }}>⚔️ {s.assigned_users.map(u => u.seats > 1 ? `${u.name} (${u.seats})` : u.name).join(', ')}</p>
             )}
           </div>
           <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: '4px', marginLeft: '8px', flexShrink: 0 }}>
