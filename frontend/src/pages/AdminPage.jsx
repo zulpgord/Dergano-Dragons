@@ -13,17 +13,31 @@ function getWeekStart(date) {
 function addDays(date, n) { const d = new Date(date); d.setDate(d.getDate() + n); return d; }
 function fmtShortDate(date) { return date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }); }
 
-// ── Stile comune per input admin ────────────────────────────────────────────
+// ── Stile comune per input admin (tema chiaro) ──────────────────────────────
 const IS = {
   width: '100%', padding: '9px 12px',
-  backgroundColor: 'var(--bg-dark, #1a1008)',
-  border: '1px solid var(--border, #4a2e10)',
-  borderRadius: '7px', color: 'var(--text, #e8d5b7)',
+  backgroundColor: 'var(--bg-card, #fffdf6)',
+  border: '1px solid var(--border, #d9c99e)',
+  borderRadius: '7px', color: 'var(--text, #2c2011)',
   fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box',
 };
 
+// ── Barra di riempimento proporzionale ──────────────────────────────────────
+function FillBar({ current, total, height = 7 }) {
+  const pct = total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
+  const isFull = pct >= 100;
+  return (
+    <div className="fill-track" style={{ height }}>
+      <div
+        className={`fill-bar ${isFull ? 'full' : ''} ${pct === 0 ? 'empty-track' : ''}`}
+        style={{ width: `${pct}%`, height: '100%' }}
+      />
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// Sezione: Sessioni
+// Sezione: Sessioni (con vista Settimana / Mese)
 // ═══════════════════════════════════════════════════════════════════════════════
 function SessionsSection({ locations }) {
   const [showForm, setShowForm] = useState(false);
@@ -36,12 +50,17 @@ function SessionsSection({ locations }) {
     start_hour: '09:00',
     duration: 2,
     required_count: 1,
-    has_pizza: false,    // 🍕 NUOVO CAMPO
+    has_pizza: false,
   });
 
   const [allSessions, setAllSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [rangeMode, setRangeMode] = useState('settimana'); // 'settimana' | 'mese'
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
+  const [calMonth, setCalMonth] = useState(() => {
+    const n = new Date();
+    return { year: n.getFullYear(), month: n.getMonth() };
+  });
   const [editingSession, setEditingSession] = useState(null);
   const [editData, setEditData] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
@@ -119,16 +138,30 @@ function SessionsSection({ locations }) {
     catch (err) { alert(err.response?.data?.error || "Errore nell'eliminazione"); }
   };
 
+  // ── Filtri settimana / mese ─────────────────────────────────────────────
   const weekEnd = addDays(weekStart, 6);
   const weekSessions = allSessions.filter(s => {
     const d = new Date(s.start_time);
     return d >= weekStart && d <= new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59);
   }).sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
+  const monthSessionsAdmin = allSessions.filter(s => {
+    const d = new Date(s.start_time);
+    return d.getFullYear() === calMonth.year && d.getMonth() === calMonth.month;
+  }).sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+
+  const visibleSessions = rangeMode === 'settimana' ? weekSessions : monthSessionsAdmin;
+
   const prevWeek = () => setWeekStart(w => addDays(w, -7));
   const nextWeek = () => setWeekStart(w => addDays(w, 7));
   const goCurrentWeek = () => setWeekStart(getWeekStart(new Date()));
   const isCurrentWeek = getWeekStart(new Date()).getTime() === weekStart.getTime();
+
+  const MONTHS_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  const prevMonth = () => setCalMonth(({ year, month }) => month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 });
+  const nextMonth = () => setCalMonth(({ year, month }) => month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 });
+  const goCurrentMonth = () => { const n = new Date(); setCalMonth({ year: n.getFullYear(), month: n.getMonth() }); };
+  const isCurrentMonth = (() => { const n = new Date(); return n.getFullYear() === calMonth.year && n.getMonth() === calMonth.month; })();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -172,26 +205,112 @@ function SessionsSection({ locations }) {
   const fmt = dt => new Date(dt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   const fmtDay = dt => new Date(dt).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
 
-  const cardSty = { background: 'var(--bg-card, #231508)', border: '1px solid var(--border, #4a2e10)', borderRadius: '10px', padding: '20px', marginBottom: '20px' };
-  const btnGold = { background: 'linear-gradient(135deg, #c9a227, #e6c44a)', color: '#0f0a05', border: '1px solid #7a5f14', borderRadius: '7px', fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '0.82rem', padding: '8px 16px', cursor: 'pointer' };
-  const btnGreen = { ...btnGold, background: 'linear-gradient(135deg, #1a5c2e, #22763b)', color: '#e8d5b7', border: '1px solid rgba(26,92,46,0.6)' };
-  const btnGray = { background: 'rgba(74,46,16,0.3)', color: '#a89070', border: '1px solid #4a2e10', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem' };
+  const cardSty = { background: 'var(--bg-card, #fffdf6)', border: '1px solid var(--border, #d9c99e)', borderRadius: '10px', padding: '20px', marginBottom: '20px' };
+  const btnGold = { background: 'linear-gradient(135deg, #a9791a, #c99a2e)', color: '#fffdf6', border: '1px solid #a9791a', borderRadius: '7px', fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '0.82rem', padding: '8px 16px', cursor: 'pointer' };
+  const btnGreen = { ...btnGold, background: 'linear-gradient(135deg, #2f7d3a, #3fa14d)', color: '#fffdf6', border: '1px solid rgba(47,125,58,0.6)' };
+  const btnGray = { background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #d9c99e', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem' };
+
+  // ── Rendering condiviso di una riga sessione ────────────────────────────
+  const renderSessionRow = (s) => {
+    const isCancelled = !!s.cancelled;
+
+    if (editingSession === s.id) {
+      return (
+        <div key={s.id} style={{ border: '1px solid rgba(169,121,26,0.4)', background: 'rgba(169,121,26,0.05)', borderRadius: '8px', padding: '12px' }}>
+          <p style={{ fontSize: '0.75rem', fontFamily: 'Cinzel, serif', color: '#a9791a', marginBottom: '10px' }}>✏️ Modifica sessione</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+            <div style={{ gridColumn: '1/-1' }}>
+              <label style={{ fontSize: '0.72rem', color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>Location</label>
+              <select name="location_id" value={editData.location_id} onChange={handleEditChange} style={{ ...IS, padding: '6px 10px', fontSize: '0.85rem', marginTop: '3px' }}>
+                {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
+            </div>
+            {[['date','Data','date'],['start_hour','Ora inizio','time'],['duration','Durata (ore)','number'],['required_count','Avv. minimi','number']].map(([name,label,type]) => (
+              <div key={name}>
+                <label style={{ fontSize: '0.72rem', color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>{label}</label>
+                <input type={type} name={name} value={editData[name]} onChange={handleEditChange}
+                  min={type==='number'?'0.5':undefined} step={name==='duration'?'0.5':undefined}
+                  style={{ ...IS, padding: '6px 10px', fontSize: '0.85rem', marginTop: '3px' }} />
+              </div>
+            ))}
+            <div style={{ gridColumn: '1/-1', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+              <input type="checkbox" name="has_pizza" checked={!!editData.has_pizza} onChange={handleEditChange}
+                style={{ width: '16px', height: '16px', accentColor: '#a9791a' }} />
+              <label style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', fontSize: '0.82rem' }}>🍕 Pizza inclusa</label>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={() => handleEditSave(s.id)} disabled={savingEdit} style={{ ...btnGold, padding: '6px 14px' }}>
+              {savingEdit ? 'Salvataggio...' : '✓ Salva'}
+            </button>
+            <button onClick={() => setEditingSession(null)} style={{ ...btnGray, padding: '6px 12px' }}>Annulla</button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div key={s.id} style={{
+        border: '1px solid var(--border)',
+        background: isCancelled ? 'rgba(169,121,26,0.06)' : 'var(--bg-page)',
+        borderRadius: '8px', padding: '10px 12px',
+        opacity: isCancelled ? 0.75 : 1,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px', flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '0.88rem', color: isCancelled ? '#9c8a66' : '#a9791a', textDecoration: isCancelled ? 'line-through' : 'none' }}>
+                {s.location_name}
+              </span>
+              <span style={{ fontSize: '0.7rem', padding: '1px 7px', borderRadius: '10px', background: 'rgba(169,121,26,0.10)', color: '#6b5a3c' }}>
+                {isCancelled ? 'Annullata' : s.assigned_count === 0 ? 'Nessun avventuriero' : `${s.assigned_count}/${s.required_count} ✓`}
+              </span>
+              {s.has_pizza && <span className="pizza-badge">🍕</span>}
+            </div>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b5a3c' }}>
+              {fmtDay(s.start_time)} · {fmt(s.start_time)}–{fmt(s.end_time)}
+            </p>
+            {!isCancelled && (
+              <div style={{ marginTop: '6px', maxWidth: '200px' }}>
+                <FillBar current={s.assigned_count} total={s.required_count} height={6} />
+              </div>
+            )}
+            {(s.assigned_users || []).length > 0 && (
+              <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: '#9c8a66' }}>⚔️ {s.assigned_users.join(', ')}</p>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: '4px', marginLeft: '8px', flexShrink: 0 }}>
+            {!isCancelled && (
+              <button onClick={() => startEditSession(s)} title="Modifica"
+                style={{ width: '30px', height: '30px', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: '0.85rem' }}>✏️</button>
+            )}
+            <button onClick={() => handleCancelSession(s)} title={isCancelled ? 'Riattiva' : 'Annulla sessione'}
+              style={{ width: '30px', height: '30px', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: '0.85rem' }}>
+              {isCancelled ? '↩️' : '🚫'}
+            </button>
+            <button onClick={() => handleDeleteSession(s.id)} title="Elimina"
+              style={{ width: '30px', height: '30px', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: '0.85rem' }}>🗑️</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div>
       {/* ── Crea sessione ── */}
       <div style={cardSty}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2 style={{ margin: 0, fontFamily: 'Cinzel, serif', color: '#c9a227', fontSize: '1.05rem' }}>⚔️ Sessioni</h2>
+          <h2 style={{ margin: 0, fontFamily: 'Cinzel, serif', color: '#a9791a', fontSize: '1.05rem' }}>⚔️ Sessioni</h2>
           <button onClick={() => setShowForm(!showForm)} style={showForm ? btnGray : btnGold}>
             {showForm ? '❌ Annulla' : '➕ Nuova Sessione'}
           </button>
         </div>
 
         {showForm && (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '16px', background: 'var(--bg-dark)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '16px', background: 'var(--bg-surface)', borderRadius: '8px', border: '1px solid var(--border)' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#a89070', marginBottom: '5px' }}>📍 Location</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#6b5a3c', marginBottom: '5px' }}>📍 Location</label>
               <select name="location_id" value={formData.location_id} onChange={handleChange} required style={IS}>
                 {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
               </select>
@@ -199,43 +318,41 @@ function SessionsSection({ locations }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#a89070', marginBottom: '5px' }}>📅 Data</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#6b5a3c', marginBottom: '5px' }}>📅 Data</label>
                 <input type="date" name="date" value={formData.date} onChange={handleChange} required style={IS} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#a89070', marginBottom: '5px' }}>🕐 Ora inizio</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#6b5a3c', marginBottom: '5px' }}>🕐 Ora inizio</label>
                 <input type="time" name="start_hour" value={formData.start_hour} onChange={handleChange} required style={IS} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#a89070', marginBottom: '5px' }}>⏱ Durata (ore)</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#6b5a3c', marginBottom: '5px' }}>⏱ Durata (ore)</label>
                 <input type="number" name="duration" min="0.5" step="0.5" value={formData.duration} onChange={handleChange} required style={IS} />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#a89070', marginBottom: '5px' }}>⚔️ Avventurieri minimi</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#6b5a3c', marginBottom: '5px' }}>⚔️ Avventurieri minimi</label>
               <input type="number" name="required_count" min="1" value={formData.required_count} onChange={handleChange} style={{ ...IS, width: '140px' }} />
             </div>
 
-            {/* 🍕 PIZZA TOGGLE */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(169,121,26,0.08)', border: '1px solid rgba(169,121,26,0.2)', borderRadius: '8px' }}>
               <input type="checkbox" id="has_pizza" name="has_pizza" checked={formData.has_pizza} onChange={handleChange}
-                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#c9a227' }} />
-              <label htmlFor="has_pizza" style={{ fontFamily: 'Cinzel, serif', color: '#c9a227', fontSize: '0.9rem', cursor: 'pointer', userSelect: 'none' }}>
+                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#a9791a' }} />
+              <label htmlFor="has_pizza" style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', fontSize: '0.9rem', cursor: 'pointer', userSelect: 'none' }}>
                 🍕 Pizza inclusa in questa sessione
               </label>
             </div>
 
-            {/* Ripetizione */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <input type="checkbox" id="repeat" checked={repeat} onChange={e => setRepeat(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#c9a227' }} />
-              <label htmlFor="repeat" style={{ fontFamily: 'Cinzel, serif', color: '#a89070', fontSize: '0.85rem', cursor: 'pointer' }}>Sessione ripetitiva (settimanale)</label>
+              <input type="checkbox" id="repeat" checked={repeat} onChange={e => setRepeat(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#a9791a' }} />
+              <label htmlFor="repeat" style={{ fontFamily: 'Cinzel, serif', color: '#6b5a3c', fontSize: '0.85rem', cursor: 'pointer' }}>Sessione ripetitiva (settimanale)</label>
             </div>
             {repeat && (
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#a89070', marginBottom: '5px' }}>Numero di settimane</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#6b5a3c', marginBottom: '5px' }}>Numero di settimane</label>
                 <input type="number" min="1" max="52" value={weeks} onChange={e => setWeeks(parseInt(e.target.value))} style={{ ...IS, width: '100px' }} />
-                <p style={{ fontSize: '0.75rem', color: '#6b5035', marginTop: '4px' }}>Verranno create {weeks} sessioni.</p>
+                <p style={{ fontSize: '0.75rem', color: '#9c8a66', marginTop: '4px' }}>Verranno create {weeks} sessioni.</p>
               </div>
             )}
 
@@ -246,114 +363,63 @@ function SessionsSection({ locations }) {
         )}
       </div>
 
-      {/* ── Lista sessioni settimana ── */}
+      {/* ── Lista sessioni: settimana o mese ── */}
       <div style={cardSty}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <h2 style={{ margin: 0, fontFamily: 'Cinzel, serif', color: '#c9a227', fontSize: '1rem' }}>📋 Sessioni della settimana</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <button onClick={prevWeek} style={{ ...btnGray, padding: '4px 10px' }}>‹</button>
-            <span style={{ fontSize: '0.82rem', color: '#a89070', minWidth: '150px', textAlign: 'center', fontFamily: 'Cinzel, serif' }}>
-              {fmtShortDate(weekStart)} – {fmtShortDate(weekEnd)}
-            </span>
-            <button onClick={nextWeek} style={{ ...btnGray, padding: '4px 10px' }}>›</button>
-            {!isCurrentWeek && (
-              <button onClick={goCurrentWeek} style={{ ...btnGold, padding: '4px 10px', fontSize: '0.75rem' }}>Questa sett.</button>
-            )}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+          <h2 style={{ margin: 0, fontFamily: 'Cinzel, serif', color: '#a9791a', fontSize: '1rem' }}>
+            📋 Sessioni {rangeMode === 'settimana' ? 'della settimana' : 'del mese'}
+          </h2>
+
+          {/* Toggle Settimana / Mese */}
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-surface)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+            {['settimana', 'mese'].map(mode => (
+              <button key={mode} onClick={() => setRangeMode(mode)} style={{
+                padding: '5px 14px', borderRadius: '6px', fontSize: '0.78rem', fontFamily: 'Cinzel, serif', fontWeight: 600,
+                background: rangeMode === mode ? 'linear-gradient(135deg, #a9791a, #c99a2e)' : 'transparent',
+                color: rangeMode === mode ? '#fffdf6' : '#6b5a3c', border: 'none', cursor: 'pointer',
+              }}>
+                {mode === 'settimana' ? 'Settimana' : 'Mese'}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Legenda */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '12px', fontSize: '0.75rem', color: '#6b5035' }}>
-          {[['#f87171','Nessun avventuriero'],['#86efac','1 avventuriero'],['#4ade80','Più avventurieri'],['#fbbf24','Annullata']].map(([color, label]) => (
-            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: color, display: 'inline-block', opacity: 0.8 }} />
-              {label}
-            </span>
-          ))}
+        {/* Navigazione */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '14px' }}>
+          {rangeMode === 'settimana' ? (
+            <>
+              <button onClick={prevWeek} style={{ ...btnGray, padding: '4px 10px' }}>‹</button>
+              <span style={{ fontSize: '0.82rem', color: '#6b5a3c', minWidth: '150px', textAlign: 'center', fontFamily: 'Cinzel, serif' }}>
+                {fmtShortDate(weekStart)} – {fmtShortDate(weekEnd)}
+              </span>
+              <button onClick={nextWeek} style={{ ...btnGray, padding: '4px 10px' }}>›</button>
+              {!isCurrentWeek && (
+                <button onClick={goCurrentWeek} style={{ ...btnGold, padding: '4px 10px', fontSize: '0.75rem' }}>Questa sett.</button>
+              )}
+            </>
+          ) : (
+            <>
+              <button onClick={prevMonth} style={{ ...btnGray, padding: '4px 10px' }}>‹</button>
+              <span style={{ fontSize: '0.82rem', color: '#6b5a3c', minWidth: '150px', textAlign: 'center', fontFamily: 'Cinzel, serif' }}>
+                {MONTHS_IT[calMonth.month]} {calMonth.year}
+              </span>
+              <button onClick={nextMonth} style={{ ...btnGray, padding: '4px 10px' }}>›</button>
+              {!isCurrentMonth && (
+                <button onClick={goCurrentMonth} style={{ ...btnGold, padding: '4px 10px', fontSize: '0.75rem' }}>Questo mese</button>
+              )}
+            </>
+          )}
         </div>
 
         {sessionsLoading ? (
-          <p style={{ color: '#a89070', fontFamily: 'Cinzel, serif', textAlign: 'center', padding: '20px' }}>Caricamento...</p>
-        ) : weekSessions.length === 0 ? (
-          <p style={{ color: '#6b5035', textAlign: 'center', padding: '24px', fontFamily: 'Cinzel, serif' }}>Nessuna sessione questa settimana.</p>
+          <p style={{ color: '#6b5a3c', fontFamily: 'Cinzel, serif', textAlign: 'center', padding: '20px' }}>Caricamento...</p>
+        ) : visibleSessions.length === 0 ? (
+          <p style={{ color: '#9c8a66', textAlign: 'center', padding: '24px', fontFamily: 'Cinzel, serif' }}>
+            Nessuna sessione {rangeMode === 'settimana' ? 'questa settimana' : 'questo mese'}.
+          </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {weekSessions.map(s => {
-              const isCancelled = !!s.cancelled;
-              const n = s.assigned_count;
-              const borderColor = isCancelled ? 'rgba(201,162,39,0.3)' : n === 0 ? 'rgba(139,26,26,0.5)' : n === 1 ? 'rgba(26,92,46,0.4)' : 'rgba(26,92,46,0.6)';
-              const bgColor = isCancelled ? 'rgba(92,70,10,0.15)' : n === 0 ? 'rgba(139,26,26,0.1)' : n === 1 ? 'rgba(26,92,46,0.1)' : 'rgba(26,92,46,0.15)';
-
-              if (editingSession === s.id) {
-                return (
-                  <div key={s.id} style={{ border: '1px solid rgba(201,162,39,0.4)', background: 'rgba(201,162,39,0.05)', borderRadius: '8px', padding: '12px' }}>
-                    <p style={{ fontSize: '0.75rem', fontFamily: 'Cinzel, serif', color: '#c9a227', marginBottom: '10px' }}>✏️ Modifica sessione</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-                      <div style={{ gridColumn: '1/-1' }}>
-                        <label style={{ fontSize: '0.72rem', color: '#a89070', fontFamily: 'Cinzel, serif' }}>Location</label>
-                        <select name="location_id" value={editData.location_id} onChange={handleEditChange} style={{ ...IS, padding: '6px 10px', fontSize: '0.85rem', marginTop: '3px' }}>
-                          {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                        </select>
-                      </div>
-                      {[['date','Data','date'],['start_hour','Ora inizio','time'],['duration','Durata (ore)','number'],['required_count','Avv. minimi','number']].map(([name,label,type]) => (
-                        <div key={name}>
-                          <label style={{ fontSize: '0.72rem', color: '#a89070', fontFamily: 'Cinzel, serif' }}>{label}</label>
-                          <input type={type} name={name} value={editData[name]} onChange={handleEditChange}
-                            min={type==='number'?'0.5':undefined} step={name==='duration'?'0.5':undefined}
-                            style={{ ...IS, padding: '6px 10px', fontSize: '0.85rem', marginTop: '3px' }} />
-                        </div>
-                      ))}
-                      {/* Pizza edit */}
-                      <div style={{ gridColumn: '1/-1', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                        <input type="checkbox" name="has_pizza" checked={!!editData.has_pizza} onChange={handleEditChange}
-                          style={{ width: '16px', height: '16px', accentColor: '#c9a227' }} />
-                        <label style={{ fontFamily: 'Cinzel, serif', color: '#c9a227', fontSize: '0.82rem' }}>🍕 Pizza inclusa</label>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => handleEditSave(s.id)} disabled={savingEdit} style={{ ...btnGold, padding: '6px 14px' }}>
-                        {savingEdit ? 'Salvataggio...' : '✓ Salva'}
-                      </button>
-                      <button onClick={() => setEditingSession(null)} style={{ ...btnGray, padding: '6px 12px' }}>Annulla</button>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div key={s.id} style={{ border: `1px solid ${borderColor}`, background: bgColor, borderRadius: '8px', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                      <span style={{ fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '0.88rem', color: isCancelled ? '#6b5035' : '#c9a227', textDecoration: isCancelled ? 'line-through' : 'none' }}>
-                        {s.location_name}
-                      </span>
-                      <span style={{ fontSize: '0.7rem', padding: '1px 7px', borderRadius: '10px', background: 'rgba(74,46,16,0.4)', color: '#a89070' }}>
-                        {isCancelled ? 'Annullata' : n === 0 ? 'Nessun avventuriero' : `${n}/${s.required_count} ✓`}
-                      </span>
-                      {s.has_pizza && <span className="pizza-badge">🍕</span>}
-                    </div>
-                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b5035' }}>
-                      {fmtDay(s.start_time)} · {fmt(s.start_time)}–{fmt(s.end_time)}
-                    </p>
-                    {(s.assigned_users || []).length > 0 && (
-                      <p style={{ margin: '2px 0 0', fontSize: '0.72rem', color: '#6b5035' }}>⚔️ {s.assigned_users.join(', ')}</p>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: '4px', marginLeft: '8px', flexShrink: 0 }}>
-                    {!isCancelled && (
-                      <button onClick={() => startEditSession(s)} title="Modifica"
-                        style={{ width: '30px', height: '30px', borderRadius: '6px', background: 'var(--bg-dark)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: '0.85rem' }}>✏️</button>
-                    )}
-                    <button onClick={() => handleCancelSession(s)} title={isCancelled ? 'Riattiva' : 'Annulla sessione'}
-                      style={{ width: '30px', height: '30px', borderRadius: '6px', background: 'var(--bg-dark)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: '0.85rem' }}>
-                      {isCancelled ? '↩️' : '🚫'}
-                    </button>
-                    <button onClick={() => handleDeleteSession(s.id)} title="Elimina"
-                      style={{ width: '30px', height: '30px', borderRadius: '6px', background: 'var(--bg-dark)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: '0.85rem' }}>🗑️</button>
-                  </div>
-                </div>
-              );
-            })}
+            {visibleSessions.map(renderSessionRow)}
           </div>
         )}
       </div>
@@ -387,14 +453,14 @@ function HeroesSection() {
 
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px' }}>
-      <h2 style={{ fontFamily: 'Cinzel, serif', color: '#c9a227', margin: '0 0 16px', fontSize: '1.05rem' }}>🧙 Eroi registrati</h2>
-      {loading ? <p style={{ color: '#a89070', fontFamily: 'Cinzel, serif' }}>Caricamento...</p> : (
+      <h2 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: '0 0 16px', fontSize: '1.05rem' }}>🧙 Eroi registrati</h2>
+      {loading ? <p style={{ color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>Caricamento...</p> : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: '0.88rem', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['Nome', 'Email', 'Ruolo', 'Azione'].map(h => (
-                  <th key={h} style={{ paddingBottom: '8px', paddingRight: '16px', textAlign: 'left', color: '#a89070', fontFamily: 'Cinzel, serif', fontSize: '0.72rem', letterSpacing: '1px' }}>{h}</th>
+                  <th key={h} style={{ paddingBottom: '8px', paddingRight: '16px', textAlign: 'left', color: '#6b5a3c', fontFamily: 'Cinzel, serif', fontSize: '0.72rem', letterSpacing: '1px' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -402,12 +468,12 @@ function HeroesSection() {
               {heroes.map(u => (
                 <tr key={u.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '10px 16px 10px 0', fontWeight: 700, color: 'var(--text)' }}>{u.name}</td>
-                  <td style={{ padding: '10px 16px 10px 0', color: '#a89070' }}>{u.email}</td>
+                  <td style={{ padding: '10px 16px 10px 0', color: '#6b5a3c' }}>{u.email}</td>
                   <td style={{ padding: '10px 16px 10px 0' }}>
                     <span style={{
                       padding: '2px 10px', borderRadius: '10px', fontSize: '0.75rem', fontFamily: 'Cinzel, serif', fontWeight: 700,
-                      background: u.role === 'admin' ? 'rgba(201,162,39,0.15)' : 'rgba(26,92,46,0.2)',
-                      color: u.role === 'admin' ? '#c9a227' : '#4ade80',
+                      background: u.role === 'admin' ? 'rgba(169,121,26,0.14)' : 'rgba(47,125,58,0.14)',
+                      color: u.role === 'admin' ? '#a9791a' : '#206a2a',
                     }}>
                       {u.role === 'admin' ? '🛡️ Admin' : '⚔️ Avventuriero'}
                     </span>
@@ -415,10 +481,10 @@ function HeroesSection() {
                   <td style={{ padding: '10px 0' }}>
                     {u.id !== currentUser.id ? (
                       <button onClick={() => toggleRole(u)}
-                        style={{ background: 'none', border: 'none', color: '#c9a227', cursor: 'pointer', fontSize: '0.82rem', textDecoration: 'underline', fontFamily: 'Cinzel, serif' }}>
+                        style={{ background: 'none', border: 'none', color: '#a9791a', cursor: 'pointer', fontSize: '0.82rem', textDecoration: 'underline', fontFamily: 'Cinzel, serif' }}>
                         {u.role === 'admin' ? '→ Avventuriero' : '→ Admin'}
                       </button>
-                    ) : <span style={{ fontSize: '0.78rem', color: '#6b5035' }}>Tu</span>}
+                    ) : <span style={{ fontSize: '0.78rem', color: '#9c8a66' }}>Tu</span>}
                   </td>
                 </tr>
               ))}
@@ -467,17 +533,17 @@ function StatsSection() {
   return (
     <div>
       <div style={cardSty}>
-        <h2 style={{ fontFamily: 'Cinzel, serif', color: '#c9a227', margin: '0 0 16px', fontSize: '1.05rem' }}>📊 Statistiche</h2>
+        <h2 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: '0 0 16px', fontSize: '1.05rem' }}>📊 Statistiche</h2>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'Cinzel, serif', color: '#a89070', marginBottom: '4px' }}>Anno</label>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'Cinzel, serif', color: '#6b5a3c', marginBottom: '4px' }}>Anno</label>
             <select value={year} onChange={e => setYear(e.target.value)} style={selSty}>
               <option value="">Tutti</option>
               {Array.from({length: 5}, (_,i) => String(currentYear-i)).map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'Cinzel, serif', color: '#a89070', marginBottom: '4px' }}>Mese</label>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'Cinzel, serif', color: '#6b5a3c', marginBottom: '4px' }}>Mese</label>
             <select value={month} onChange={e => setMonth(e.target.value)} style={selSty}>
               <option value="">Tutti</option>
               {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
@@ -487,21 +553,21 @@ function StatsSection() {
       </div>
 
       {loading ? (
-        <div style={cardSty}><p style={{ color: '#a89070', fontFamily: 'Cinzel, serif' }}>Caricamento...</p></div>
+        <div style={cardSty}><p style={{ color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>Caricamento...</p></div>
       ) : (
         <>
           {shiftStats && (
             <div style={cardSty}>
-              <h3 style={{ fontFamily: 'Cinzel, serif', color: '#a89070', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>📋 Riepilogo sessioni nel periodo</h3>
+              <h3 style={{ fontFamily: 'Cinzel, serif', color: '#6b5a3c', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>📋 Riepilogo sessioni nel periodo</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                 {[
-                  { label: 'Sessioni totali', val: shiftStats.total_shifts, color: '#e8d5b7', bg: 'rgba(74,46,16,0.3)' },
-                  { label: 'Sessioni attive', val: shiftStats.active_shifts, color: '#4ade80', bg: 'rgba(26,92,46,0.2)' },
-                  { label: 'Annullate', val: shiftStats.cancelled_shifts, color: '#fbbf24', bg: 'rgba(92,70,10,0.2)' },
+                  { label: 'Sessioni totali', val: shiftStats.total_shifts, color: '#2c2011', bg: 'rgba(217,201,158,0.3)' },
+                  { label: 'Sessioni attive', val: shiftStats.active_shifts, color: '#206a2a', bg: 'rgba(47,125,58,0.12)' },
+                  { label: 'Annullate', val: shiftStats.cancelled_shifts, color: '#8a651b', bg: 'rgba(169,121,26,0.12)' },
                 ].map(({label, val, color, bg}) => (
                   <div key={label} style={{ textAlign: 'center', padding: '12px', background: bg, borderRadius: '8px' }}>
                     <div style={{ fontSize: '1.8rem', fontWeight: 900, color, fontFamily: 'Cinzel, serif' }}>{val}</div>
-                    <div style={{ fontSize: '0.72rem', color: '#a89070', marginTop: '4px' }}>{label}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#6b5a3c', marginTop: '4px' }}>{label}</div>
                   </div>
                 ))}
               </div>
@@ -509,32 +575,32 @@ function StatsSection() {
           )}
 
           <div style={cardSty}>
-            <h3 style={{ fontFamily: 'Cinzel, serif', color: '#a89070', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>⚔️ Sessioni per avventuriero</h3>
+            <h3 style={{ fontFamily: 'Cinzel, serif', color: '#6b5a3c', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>⚔️ Sessioni per avventuriero</h3>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
                     {['#','Avventuriero','Prenotazioni','Attive','Annullate','Ore totali'].map(h => (
-                      <th key={h} style={{ paddingBottom: '8px', paddingRight: '12px', textAlign: h==='#'?'left':'center', color: '#a89070', fontFamily: 'Cinzel, serif', fontSize: '0.7rem', letterSpacing: '1px' }}>{h}</th>
+                      <th key={h} style={{ paddingBottom: '8px', paddingRight: '12px', textAlign: h==='#'?'left':'center', color: '#6b5a3c', fontFamily: 'Cinzel, serif', fontSize: '0.7rem', letterSpacing: '1px' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {stats.map((s, i) => (
-                    <tr key={s.id} style={{ borderBottom: '1px solid rgba(74,46,16,0.3)', opacity: s.total_bookings === 0 ? 0.5 : 1 }}>
-                      <td style={{ padding: '8px 12px 8px 0', color: '#6b5035' }}>{i+1}</td>
+                    <tr key={s.id} style={{ borderBottom: '1px solid var(--border)', opacity: s.total_bookings === 0 ? 0.5 : 1 }}>
+                      <td style={{ padding: '8px 12px 8px 0', color: '#9c8a66' }}>{i+1}</td>
                       <td style={{ padding: '8px 12px 8px 0' }}>
                         <div style={{ fontWeight: 700, color: 'var(--text)' }}>{s.name}</div>
-                        <div style={{ fontSize: '0.72rem', color: '#6b5035' }}>{s.email}</div>
+                        <div style={{ fontSize: '0.72rem', color: '#9c8a66' }}>{s.email}</div>
                       </td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#e8d5b7' }}>{s.total_bookings}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#4ade80', fontWeight: 600 }}>{s.active_bookings}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#f87171' }}>{s.cancelled_bookings}</td>
-                      <td style={{ padding: '8px 0', textAlign: 'center', color: '#c9a227', fontWeight: 700, fontFamily: 'Cinzel, serif' }}>{s.total_hours}h</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#2c2011' }}>{s.total_bookings}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#206a2a', fontWeight: 600 }}>{s.active_bookings}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#a3261e' }}>{s.cancelled_bookings}</td>
+                      <td style={{ padding: '8px 0', textAlign: 'center', color: '#a9791a', fontWeight: 700, fontFamily: 'Cinzel, serif' }}>{s.total_hours}h</td>
                     </tr>
                   ))}
                   {stats.length === 0 && (
-                    <tr><td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: '#6b5035', fontFamily: 'Cinzel, serif' }}>Nessun dato disponibile</td></tr>
+                    <tr><td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: '#9c8a66', fontFamily: 'Cinzel, serif' }}>Nessun dato disponibile</td></tr>
                   )}
                 </tbody>
               </table>
@@ -577,19 +643,19 @@ function LocationsSection() {
   };
 
   const cardSty = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px' };
-  const btnGold = { background: 'linear-gradient(135deg, #c9a227, #e6c44a)', color: '#0f0a05', border: '1px solid #7a5f14', borderRadius: '7px', fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '0.82rem', padding: '8px 16px', cursor: 'pointer' };
-  const btnGray = { background: 'rgba(74,46,16,0.3)', color: '#a89070', border: '1px solid #4a2e10', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem' };
+  const btnGold = { background: 'linear-gradient(135deg, #a9791a, #c99a2e)', color: '#fffdf6', border: '1px solid #a9791a', borderRadius: '7px', fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '0.82rem', padding: '8px 16px', cursor: 'pointer' };
+  const btnGray = { background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #d9c99e', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem' };
 
   return (
     <div style={cardSty}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2 style={{ fontFamily: 'Cinzel, serif', color: '#c9a227', margin: 0, fontSize: '1.05rem' }}>📍 Locations</h2>
+        <h2 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: 0, fontSize: '1.05rem' }}>📍 Locations</h2>
         {!showForm && <button onClick={startNew} style={btnGold}>➕ Aggiungi Location</button>}
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', padding: '14px', background: 'var(--bg-dark)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-          <h3 style={{ fontFamily: 'Cinzel, serif', color: '#a89070', margin: '0 0 6px', fontSize: '0.88rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', padding: '14px', background: 'var(--bg-surface)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <h3 style={{ fontFamily: 'Cinzel, serif', color: '#6b5a3c', margin: '0 0 6px', fontSize: '0.88rem' }}>
             {editingId ? 'Modifica Location' : 'Nuova Location'}
           </h3>
           <input type="text" value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
@@ -603,17 +669,17 @@ function LocationsSection() {
         </form>
       )}
 
-      {loading ? <p style={{ color: '#a89070', fontFamily: 'Cinzel, serif' }}>Caricamento...</p>
-        : locations.length === 0 ? <p style={{ color: '#6b5035', fontFamily: 'Cinzel, serif' }}>Nessuna location. Aggiungine una!</p>
+      {loading ? <p style={{ color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>Caricamento...</p>
+        : locations.length === 0 ? <p style={{ color: '#9c8a66', fontFamily: 'Cinzel, serif' }}>Nessuna location. Aggiungine una!</p>
         : (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {locations.map(loc => (
               <li key={loc.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <div style={{ fontWeight: 700, color: '#c9a227', fontFamily: 'Cinzel, serif', fontSize: '0.9rem' }}>{loc.name}</div>
-                  {loc.address && <div style={{ fontSize: '0.82rem', color: '#a89070', marginTop: '2px' }}>{loc.address}</div>}
+                  <div style={{ fontWeight: 700, color: '#a9791a', fontFamily: 'Cinzel, serif', fontSize: '0.9rem' }}>{loc.name}</div>
+                  {loc.address && <div style={{ fontSize: '0.82rem', color: '#6b5a3c', marginTop: '2px' }}>{loc.address}</div>}
                 </div>
-                <button onClick={() => startEdit(loc)} style={{ background: 'none', border: 'none', color: '#c9a227', cursor: 'pointer', fontSize: '0.82rem', textDecoration: 'underline', fontFamily: 'Cinzel, serif' }}>
+                <button onClick={() => startEdit(loc)} style={{ background: 'none', border: 'none', color: '#a9791a', cursor: 'pointer', fontSize: '0.82rem', textDecoration: 'underline', fontFamily: 'Cinzel, serif' }}>
                   ✏️ Modifica
                 </button>
               </li>
@@ -640,10 +706,10 @@ export default function AdminPage() {
 
   if (user.role !== 'admin') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)' }}>
         <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontFamily: 'Cinzel, serif', color: '#f87171' }}>❌ Accesso negato</h1>
-          <button onClick={() => navigate('/dashboard')} style={{ background: 'linear-gradient(135deg, #c9a227, #e6c44a)', color: '#0f0a05', border: 'none', borderRadius: '8px', padding: '10px 20px', fontFamily: 'Cinzel, serif', fontWeight: 700, cursor: 'pointer' }}>
+          <h1 style={{ fontFamily: 'Cinzel, serif', color: '#a3261e' }}>❌ Accesso negato</h1>
+          <button onClick={() => navigate('/dashboard')} style={{ background: 'linear-gradient(135deg, #a9791a, #c99a2e)', color: '#fffdf6', border: 'none', borderRadius: '8px', padding: '10px 20px', fontFamily: 'Cinzel, serif', fontWeight: 700, cursor: 'pointer' }}>
             Torna alla Dashboard
           </button>
         </div>
@@ -659,11 +725,11 @@ export default function AdminPage() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-dark, #1a1008)' }}>
-      <header style={{ background: 'linear-gradient(180deg, #0f0a05, #1a1008)', borderBottom: '2px solid #4a2e10', boxShadow: '0 2px 16px rgba(0,0,0,0.6)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-page, #f3ecdb)' }}>
+      <header style={{ background: 'linear-gradient(180deg, #fffdf6, #f3ecdb)', borderBottom: '2px solid #d9c99e', boxShadow: '0 2px 10px rgba(80,60,20,0.08)' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ margin: 0, fontFamily: 'Cinzel, serif', color: '#c9a227', fontSize: '1.05rem' }}>🛡️ Pannello Admin</h1>
-          <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: '#c9a227', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontSize: '0.85rem', textDecoration: 'underline' }}>
+          <h1 style={{ margin: 0, fontFamily: 'Cinzel, serif', color: '#a9791a', fontSize: '1.05rem' }}>🛡️ Pannello Admin</h1>
+          <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: '#a9791a', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontSize: '0.85rem', textDecoration: 'underline' }}>
             ← Dashboard
           </button>
         </div>
@@ -671,8 +737,8 @@ export default function AdminPage() {
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               padding: '10px 18px', fontSize: '0.82rem', fontFamily: 'Cinzel, serif', fontWeight: 600,
-              background: 'none', border: 'none', borderBottom: `2px solid ${tab === t.id ? '#c9a227' : 'transparent'}`,
-              color: tab === t.id ? '#c9a227' : '#a89070', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s',
+              background: 'none', border: 'none', borderBottom: `2px solid ${tab === t.id ? '#a9791a' : 'transparent'}`,
+              color: tab === t.id ? '#a9791a' : '#6b5a3c', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s',
             }}>
               {t.label}
             </button>

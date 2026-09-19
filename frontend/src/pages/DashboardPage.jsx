@@ -2,75 +2,47 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { shiftsAPI, assignmentsAPI } from '../services/api';
 
-// ── Header logo fantasy: dado SX + drago DX ─────────────────────────────────
+// ── Header logo fantasy: dado SX + drago DX (tema chiaro) ───────────────────
 function DerganoHeader() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', height: '54px' }}>
-
-      {/* DADO — logo testuale compatto */}
       <img
         src="/dado.png"
         alt="Dergano & Dragons"
         style={{
           height: '52px', width: 'auto', objectFit: 'contain',
-          filter: 'drop-shadow(0 0 6px rgba(201,162,39,0.3)) brightness(1.05)',
+          filter: 'invert(1) brightness(0.35) sepia(0.4) saturate(1.5) hue-rotate(-10deg)',
         }}
       />
-
-      {/* Separatore verticale */}
-      <div style={{ width: '1px', height: '32px', background: '#4a2e10', margin: '0 6px', flexShrink: 0 }} />
-
-      {/* DRAGO — illustrazione piccola */}
+      <div style={{ width: '1px', height: '32px', background: '#d9c99e', margin: '0 6px', flexShrink: 0 }} />
       <img
         src="/drago.png"
         alt="Drago"
-        style={{
-          height: '54px', width: 'auto', objectFit: 'contain',
-          /* invert per dark bg */
-          filter: 'invert(1) brightness(0.88) drop-shadow(0 0 4px rgba(201,162,39,0.15))',
-        }}
+        style={{ height: '54px', width: 'auto', objectFit: 'contain' }}
       />
-
-      {/* Etichetta SESSION MANAGER */}
       <div style={{
-        fontFamily: 'Cinzel, serif', fontSize: '0.55rem', color: '#a89070',
+        fontFamily: 'Cinzel, serif', fontSize: '0.55rem', color: '#6b5a3c',
         letterSpacing: '3px', paddingLeft: '8px', lineHeight: 1.4,
-        borderLeft: '1px solid #4a2e10', marginLeft: '4px',
+        borderLeft: '1px solid #d9c99e', marginLeft: '4px',
       }}>
         SESSION<br/>MANAGER
       </div>
-
     </div>
   );
 }
 
-// ── Colori in base allo stato della sessione ─────────────────────────────────
-function getSessionColors(session, isMySession) {
-  if (session.cancelled) return {
-    cell: 'bg-yellow-100 text-yellow-600',
-    card: 'border-yellow-200 bg-yellow-50 opacity-75',
-    badge: 'bg-yellow-200 text-yellow-700',
-  };
-  if (isMySession) return {
-    cell: 'bg-blue-100 text-blue-800',
-    card: 'border-blue-200 bg-blue-50',
-    badge: 'bg-blue-200 text-blue-800',
-  };
-  if (session.assigned_count === 0) return {
-    cell: 'bg-red-100 text-red-800',
-    card: 'border-red-200 bg-red-50',
-    badge: 'bg-red-200 text-red-800',
-  };
-  if (session.assigned_count < session.required_count) return {
-    cell: 'bg-green-100 text-green-700',
-    card: 'border-green-100 bg-green-50',
-    badge: 'bg-green-100 text-green-700',
-  };
-  return {
-    cell: 'bg-green-300 text-green-900',
-    card: 'border-green-300 bg-green-100',
-    badge: 'bg-green-300 text-green-900',
-  };
+// ── Barra di riempimento proporzionale (avventurieri iscritti / richiesti) ──
+function FillBar({ current, total, height = 7 }) {
+  const pct = total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
+  const isFull = pct >= 100;
+  return (
+    <div className="fill-track" style={{ height }}>
+      <div
+        className={`fill-bar ${isFull ? 'full' : ''} ${pct === 0 ? 'empty-track' : ''}`}
+        style={{ width: `${pct}%`, height: '100%' }}
+      />
+    </div>
+  );
 }
 
 // ── Modale sessione ──────────────────────────────────────────────────────────
@@ -91,46 +63,48 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
     : partial ? 'Parzialmente coperta'
     : 'Senza avventurieri';
 
-  const statusColor = session.cancelled ? 'bg-yellow-100 text-yellow-700'
-    : isAssigned ? 'bg-blue-100 text-blue-800'
-    : fullyC ? 'bg-green-300 text-green-900'
-    : partial ? 'bg-green-100 text-green-700'
-    : 'bg-red-100 text-red-800';
-
-  const countColor = session.cancelled ? 'text-yellow-600'
-    : isAssigned ? 'text-blue-700'
-    : fullyC ? 'text-green-700'
-    : partial ? 'text-yellow-700'
-    : 'text-red-600';
+  const statusBg = session.cancelled ? 'rgba(169,121,26,0.14)'
+    : isAssigned ? 'rgba(36,85,164,0.14)'
+    : fullyC ? 'rgba(169,121,26,0.18)'
+    : partial ? 'rgba(47,125,58,0.14)'
+    : 'rgba(179,38,30,0.12)';
+  const statusText = session.cancelled ? '#8a651b'
+    : isAssigned ? '#2455a4'
+    : fullyC ? '#a9791a'
+    : partial ? '#206a2a'
+    : '#a3261e';
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.75)' }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 50,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '16px',
+        backgroundColor: 'rgba(44,32,17,0.45)',
+      }}
       onClick={onClose}
     >
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: 'var(--bg-card, #231508)',
-          border: '1px solid var(--border-gold, #7a5f14)',
+          background: 'var(--bg-card, #fffdf6)',
+          border: '1px solid var(--border-gold, #a9791a)',
           borderRadius: '12px',
-          boxShadow: '0 0 30px rgba(201,162,39,0.15), 0 8px 32px rgba(0,0,0,0.8)',
+          boxShadow: '0 8px 32px rgba(80,60,20,0.25)',
           width: '100%',
           maxWidth: '380px',
           padding: '1.5rem',
         }}
       >
         {session.cancelled && (
-          <div style={{ marginBottom: '12px', padding: '10px', background: 'rgba(139,26,26,0.2)', border: '1px solid rgba(139,26,26,0.4)', borderRadius: '8px', color: '#fbbf24', fontSize: '0.85rem', textAlign: 'center' }}>
+          <div style={{ marginBottom: '12px', padding: '10px', background: 'rgba(169,121,26,0.14)', border: '1px solid rgba(169,121,26,0.3)', borderRadius: '8px', color: '#8a651b', fontSize: '0.85rem', textAlign: 'center' }}>
             ⚠️ Questa sessione è stata annullata
           </div>
         )}
 
-        {/* Header modale */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
           <div>
-            <h2 style={{ fontFamily: 'Cinzel, serif', color: '#c9a227', margin: 0, fontSize: '1.1rem' }}>
+            <h2 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: 0, fontSize: '1.1rem' }}>
               {session.location_name}
             </h2>
             {session.has_pizza && (
@@ -139,11 +113,10 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
               </span>
             )}
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#a89070', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1 }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#9c8a66', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1 }}>×</button>
         </div>
 
-        {/* Info sessione */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px', color: 'var(--text-muted, #a89070)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px', color: 'var(--text-muted, #6b5a3c)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>📅</span>
             <span style={{ fontSize: '0.9rem', textTransform: 'capitalize' }}>{fmtDate(session.start_time)}</span>
@@ -154,28 +127,29 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>⚔️</span>
-            <span className={`text-sm font-semibold ${countColor}`}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)' }}>
               {session.assigned_count} / {session.required_count} avventurieri
             </span>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}`}>
+            <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 600, background: statusBg, color: statusText }}>
               {statusLabel}
             </span>
           </div>
+          {/* Barra di riempimento */}
+          <FillBar current={session.assigned_count} total={session.required_count} height={9} />
         </div>
 
-        {/* Lista avventurieri */}
         {assignedUsers.length > 0 && (
           <div style={{ marginBottom: '20px' }}>
-            <p style={{ fontSize: '0.72rem', color: '#a89070', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Cinzel, serif' }}>
+            <p style={{ fontSize: '0.72rem', color: '#9c8a66', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Cinzel, serif' }}>
               Avventurieri
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {assignedUsers.map((name, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text, #e8d5b7)' }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text, #2c2011)' }}>
                   <span style={{
                     width: '22px', height: '22px', borderRadius: '50%',
-                    background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)',
-                    color: '#c9a227', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(169,121,26,0.14)', border: '1px solid rgba(169,121,26,0.3)',
+                    color: '#a9791a', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
                   }}>
                     {name.charAt(0).toUpperCase()}
@@ -187,19 +161,18 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
           </div>
         )}
 
-        {/* Azioni */}
         {session.cancelled ? (
-          <div style={{ background: 'rgba(139,26,26,0.2)', border: '1px solid rgba(139,26,26,0.3)', borderRadius: '8px', padding: '12px', textAlign: 'center', color: '#fbbf24', fontSize: '0.85rem' }}>
+          <div style={{ background: 'rgba(169,121,26,0.12)', border: '1px solid rgba(169,121,26,0.25)', borderRadius: '8px', padding: '12px', textAlign: 'center', color: '#8a651b', fontSize: '0.85rem' }}>
             Questa sessione è stata annullata dall'organizzazione.
           </div>
         ) : isAssigned ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ background: 'rgba(26,52,96,0.3)', border: '1px solid rgba(26,52,96,0.5)', borderRadius: '8px', padding: '10px', textAlign: 'center', color: '#93c5fd', fontSize: '0.88rem', fontWeight: 600 }}>
+            <div style={{ background: 'rgba(36,85,164,0.10)', border: '1px solid rgba(36,85,164,0.3)', borderRadius: '8px', padding: '10px', textAlign: 'center', color: '#2455a4', fontSize: '0.88rem', fontWeight: 600 }}>
               ✓ Sei registrato a questa sessione
             </div>
             <button
               onClick={() => { onCancel(myAssignment.id); onClose(); }}
-              style={{ width: '100%', padding: '10px', background: 'rgba(139,26,26,0.2)', color: '#f87171', border: '1px solid rgba(139,26,26,0.4)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem' }}
+              style={{ width: '100%', padding: '10px', background: 'rgba(179,38,30,0.10)', color: '#a3261e', border: '1px solid rgba(179,38,30,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem' }}
             >
               Annulla partecipazione
             </button>
@@ -210,11 +183,11 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
             disabled={isBooking}
             style={{
               width: '100%', padding: '11px',
-              background: isBooking ? 'rgba(201,162,39,0.3)' : 'linear-gradient(135deg, #c9a227, #e6c44a)',
-              color: '#0f0a05', border: '1px solid #7a5f14', borderRadius: '8px',
+              background: isBooking ? 'rgba(169,121,26,0.3)' : 'linear-gradient(135deg, #a9791a, #c99a2e)',
+              color: '#fffdf6', border: '1px solid #a9791a', borderRadius: '8px',
               fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '0.9rem',
               letterSpacing: '0.5px', cursor: isBooking ? 'not-allowed' : 'pointer',
-              boxShadow: isBooking ? 'none' : '0 0 10px rgba(201,162,39,0.3)',
+              boxShadow: isBooking ? 'none' : '0 2px 10px rgba(169,121,26,0.25)',
             }}
           >
             {isBooking ? '⏳ Registrazione...' : '⚔️ Unisciti all\'avventura'}
@@ -314,7 +287,6 @@ export default function DashboardPage() {
   const nextMonth = () => setCalMonth(({ year, month }) => month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 });
   const goToday = () => { const n = new Date(); setCalMonth({ year: n.getFullYear(), month: n.getMonth() }); };
 
-  // ── Dati filtrati per mese ────────────────────────────────────────────────
   const monthSessions = sessions.filter(s => {
     const d = new Date(s.start_time);
     return d.getFullYear() === calMonth.year && d.getMonth() === calMonth.month;
@@ -330,7 +302,6 @@ export default function DashboardPage() {
     return d.getFullYear() === calMonth.year && d.getMonth() === calMonth.month;
   });
 
-  // ── Griglia calendario ────────────────────────────────────────────────────
   const daysInMonth = new Date(calMonth.year, calMonth.month + 1, 0).getDate();
   const rawFirstDay = new Date(calMonth.year, calMonth.month, 1).getDay();
   const firstDay = (rawFirstDay + 6) % 7;
@@ -349,16 +320,14 @@ export default function DashboardPage() {
   const fmt = (dt) => new Date(dt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   const fmtDate = (dt) => new Date(dt).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
 
-  // ── Colori copertura ──────────────────────────────────────────────────────
   const coverageColor = coveragePercent >= 80
-    ? { bg: 'rgba(26,92,46,0.25)', text: '#4ade80', num: '#4ade80', border: 'rgba(26,92,46,0.4)' }
+    ? { bg: 'rgba(47,125,58,0.12)', text: '#206a2a', num: '#206a2a', border: 'rgba(47,125,58,0.3)' }
     : coveragePercent >= 50
-    ? { bg: 'rgba(92,70,10,0.25)', text: '#fbbf24', num: '#fbbf24', border: 'rgba(92,70,10,0.4)' }
-    : { bg: 'rgba(139,26,26,0.2)', text: '#f87171', num: '#f87171', border: 'rgba(139,26,26,0.3)' };
+    ? { bg: 'rgba(169,121,26,0.12)', text: '#8a651b', num: '#8a651b', border: 'rgba(169,121,26,0.3)' }
+    : { bg: 'rgba(179,38,30,0.10)', text: '#a3261e', num: '#a3261e', border: 'rgba(179,38,30,0.25)' };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-dark, #1a1008)' }}>
-      {/* Modale sessione */}
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-page, #f3ecdb)' }}>
       <SessionModal
         session={selectedSession}
         userAssignments={userAssignments}
@@ -367,27 +336,25 @@ export default function DashboardPage() {
         onCancel={handleCancel}
       />
 
-      {/* Toast */}
       {toast && (
         <div style={{
           position: 'fixed', top: '24px', left: '50%', transform: 'translateX(-50%)',
           zIndex: 100, padding: '12px 24px', borderRadius: '10px', fontWeight: 700,
           fontSize: '0.9rem', whiteSpace: 'nowrap',
-          background: toast.startsWith('❌') ? 'rgba(139,26,26,0.95)' : 'rgba(26,92,46,0.95)',
-          color: '#e8d5b7',
-          border: `1px solid ${toast.startsWith('❌') ? 'rgba(139,26,26,0.8)' : 'rgba(26,92,46,0.8)'}`,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          background: toast.startsWith('❌') ? 'rgba(179,38,30,0.95)' : 'rgba(47,125,58,0.95)',
+          color: '#fffdf6',
+          border: `1px solid ${toast.startsWith('❌') ? 'rgba(179,38,30,0.8)' : 'rgba(47,125,58,0.8)'}`,
+          boxShadow: '0 4px 16px rgba(80,60,20,0.25)',
         }}>
           {toast}
         </div>
       )}
 
-      {/* Header */}
       <header style={{
-        background: 'linear-gradient(180deg, #0f0a05 0%, #1a1008 100%)',
-        borderBottom: '2px solid #4a2e10',
+        background: 'linear-gradient(180deg, #fffdf6 0%, #f3ecdb 100%)',
+        borderBottom: '2px solid #d9c99e',
         padding: '14px 24px',
-        boxShadow: '0 2px 16px rgba(0,0,0,0.6)',
+        boxShadow: '0 2px 10px rgba(80,60,20,0.08)',
       }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <DerganoHeader />
@@ -396,8 +363,8 @@ export default function DashboardPage() {
               <button
                 onClick={() => navigate('/admin')}
                 style={{
-                  background: 'linear-gradient(135deg, #c9a227, #e6c44a)',
-                  color: '#0f0a05', border: '1px solid #7a5f14', borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #a9791a, #c99a2e)',
+                  color: '#fffdf6', border: '1px solid #a9791a', borderRadius: '8px',
                   padding: '6px 14px', fontFamily: 'Cinzel, serif', fontWeight: 700,
                   fontSize: '0.8rem', cursor: 'pointer', letterSpacing: '0.5px',
                 }}
@@ -405,12 +372,12 @@ export default function DashboardPage() {
                 🛡️ Admin
               </button>
             )}
-            <span style={{ color: '#a89070', fontSize: '0.88rem', fontFamily: 'Cinzel, serif' }}>
+            <span style={{ color: '#6b5a3c', fontSize: '0.88rem', fontFamily: 'Cinzel, serif' }}>
               ⚔️ {user.name}
             </span>
             <button
               onClick={handleLogout}
-              style={{ background: 'rgba(139,26,26,0.2)', color: '#f87171', border: '1px solid rgba(139,26,26,0.4)', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontSize: '0.82rem' }}
+              style={{ background: 'rgba(179,38,30,0.10)', color: '#a3261e', border: '1px solid rgba(179,38,30,0.3)', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontSize: '0.82rem' }}
             >
               Esci
             </button>
@@ -420,37 +387,34 @@ export default function DashboardPage() {
 
       <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px 16px' }}>
 
-        {/* Navigazione mese */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <button onClick={prevMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: '#c9a227', fontSize: '1.2rem', cursor: 'pointer' }}>‹</button>
+          <button onClick={prevMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: '#a9791a', fontSize: '1.2rem', cursor: 'pointer' }}>‹</button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h2 style={{ margin: 0, fontFamily: 'Cinzel, serif', color: '#c9a227', fontSize: '1.1rem' }}>
+            <h2 style={{ margin: 0, fontFamily: 'Cinzel, serif', color: '#a9791a', fontSize: '1.1rem' }}>
               {MONTHS_IT[calMonth.month]} {calMonth.year}
             </h2>
-            <button onClick={goToday} style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: '6px', background: 'rgba(201,162,39,0.15)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.3)', cursor: 'pointer', fontFamily: 'Cinzel, serif' }}>
+            <button onClick={goToday} style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: '6px', background: 'rgba(169,121,26,0.12)', color: '#a9791a', border: '1px solid rgba(169,121,26,0.3)', cursor: 'pointer', fontFamily: 'Cinzel, serif' }}>
               Oggi
             </button>
           </div>
-          <button onClick={nextMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: '#c9a227', fontSize: '1.2rem', cursor: 'pointer' }}>›</button>
+          <button onClick={nextMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: '#a9791a', fontSize: '1.2rem', cursor: 'pointer' }}>›</button>
         </div>
 
-        {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
           <div style={{ padding: '16px', borderRadius: '10px', background: coverageColor.bg, border: `1px solid ${coverageColor.border}` }}>
             <p style={{ margin: 0, fontSize: '0.82rem', color: coverageColor.text, fontFamily: 'Cinzel, serif' }}>Copertura del mese</p>
             <p style={{ margin: '4px 0 0', fontSize: '2rem', fontWeight: 900, color: coverageColor.num, fontFamily: 'Cinzel, serif' }}>{coveragePercent}%</p>
-            <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: coverageColor.text, opacity: 0.8 }}>
+            <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: coverageColor.text, opacity: 0.85 }}>
               {coveredCount + partialCount}/{activeSessions.length} sessioni coperte
             </p>
           </div>
-          <div style={{ padding: '16px', borderRadius: '10px', background: 'rgba(26,52,96,0.25)', border: '1px solid rgba(26,52,96,0.4)' }}>
-            <p style={{ margin: 0, fontSize: '0.82rem', color: '#93c5fd', fontFamily: 'Cinzel, serif' }}>Le mie sessioni</p>
-            <p style={{ margin: '4px 0 0', fontSize: '2rem', fontWeight: 900, color: '#93c5fd', fontFamily: 'Cinzel, serif' }}>{myMonthBookings.length}</p>
-            <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#93c5fd', opacity: 0.8 }}>questo mese</p>
+          <div style={{ padding: '16px', borderRadius: '10px', background: 'rgba(36,85,164,0.08)', border: '1px solid rgba(36,85,164,0.25)' }}>
+            <p style={{ margin: 0, fontSize: '0.82rem', color: '#2455a4', fontFamily: 'Cinzel, serif' }}>Le mie sessioni</p>
+            <p style={{ margin: '4px 0 0', fontSize: '2rem', fontWeight: 900, color: '#2455a4', fontFamily: 'Cinzel, serif' }}>{myMonthBookings.length}</p>
+            <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#2455a4', opacity: 0.85 }}>questo mese</p>
           </div>
         </div>
 
-        {/* Toggle vista */}
         <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: 'var(--bg-card)', padding: '4px', borderRadius: '10px', width: 'fit-content', border: '1px solid var(--border)' }}>
           {['calendario', 'lista'].map(mode => (
             <button
@@ -459,8 +423,8 @@ export default function DashboardPage() {
               style={{
                 padding: '8px 20px', borderRadius: '8px', fontSize: '0.88rem',
                 fontFamily: 'Cinzel, serif', fontWeight: 600,
-                background: viewMode === mode ? 'linear-gradient(135deg, #c9a227, #e6c44a)' : 'transparent',
-                color: viewMode === mode ? '#0f0a05' : '#a89070',
+                background: viewMode === mode ? 'linear-gradient(135deg, #a9791a, #c99a2e)' : 'transparent',
+                color: viewMode === mode ? '#fffdf6' : '#6b5a3c',
                 border: 'none', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
@@ -470,13 +434,13 @@ export default function DashboardPage() {
         </div>
 
         {error && (
-          <div style={{ background: 'rgba(139,26,26,0.2)', border: '1px solid rgba(139,26,26,0.4)', color: '#f87171', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
+          <div style={{ background: 'rgba(179,38,30,0.10)', border: '1px solid rgba(179,38,30,0.3)', color: '#a3261e', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
             {error}
           </div>
         )}
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '64px', color: '#a89070', fontFamily: 'Cinzel, serif' }}>
+          <div style={{ textAlign: 'center', padding: '64px', color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>
             ⏳ Caricamento...
           </div>
         ) : (
@@ -486,7 +450,7 @@ export default function DashboardPage() {
               <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '4px' }}>
                   {DAYS_IT.map(d => (
-                    <div key={d} style={{ textAlign: 'center', fontSize: '0.72rem', color: '#a89070', padding: '4px', fontFamily: 'Cinzel, serif' }}>{d}</div>
+                    <div key={d} style={{ textAlign: 'center', fontSize: '0.72rem', color: '#9c8a66', padding: '4px', fontFamily: 'Cinzel, serif' }}>{d}</div>
                   ))}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px' }}>
@@ -498,29 +462,37 @@ export default function DashboardPage() {
                       <div
                         key={idx}
                         style={{
-                          minHeight: '88px', borderRadius: '6px', padding: '3px',
-                          background: !day ? 'transparent' : isToday ? 'rgba(201,162,39,0.08)' : 'var(--bg-surface)',
-                          border: !day ? '1px solid transparent' : isToday ? '1px solid rgba(201,162,39,0.4)' : '1px solid var(--border)',
+                          minHeight: '92px', borderRadius: '6px', padding: '3px',
+                          background: !day ? 'transparent' : isToday ? 'rgba(169,121,26,0.06)' : 'var(--bg-surface)',
+                          border: !day ? '1px solid transparent' : isToday ? '1px solid rgba(169,121,26,0.35)' : '1px solid var(--border)',
                         }}
                       >
                         {day && (
                           <>
-                            <p style={{ fontSize: '0.72rem', fontWeight: 700, margin: '0 0 2px 2px', color: isToday ? '#c9a227' : '#6b5035', fontFamily: 'Cinzel, serif' }}>{day}</p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <p style={{ fontSize: '0.72rem', fontWeight: 700, margin: '0 0 2px 2px', color: isToday ? '#a9791a' : '#9c8a66', fontFamily: 'Cinzel, serif' }}>{day}</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                               {daySessions.map(s => {
                                 const isMySession = userAssignments.some(a => a.shift_id === s.id && a.status === 'assigned');
-                                const colors = getSessionColors(s, isMySession);
                                 return (
                                   <div
                                     key={s.id}
                                     onClick={() => setSelectedSession(s)}
-                                    className={`${colors.cell}`}
-                                    style={{ fontSize: '0.67rem', padding: '2px 4px', borderRadius: '4px', cursor: 'pointer', opacity: s.cancelled ? 0.65 : 1 }}
+                                    style={{
+                                      fontSize: '0.66rem', padding: '2px 4px', borderRadius: '4px', cursor: 'pointer',
+                                      opacity: s.cancelled ? 0.6 : 1,
+                                      background: s.cancelled ? 'rgba(169,121,26,0.12)' : 'var(--bg-page)',
+                                      border: isMySession ? '1.5px solid #2455a4' : '1px solid var(--border)',
+                                    }}
                                   >
-                                    <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
                                       {s.cancelled && '⚠ '}{s.has_pizza && '🍕 '}{s.location_name}
                                     </div>
-                                    <div style={{ opacity: 0.75 }}>{fmt(s.start_time)}–{fmt(s.end_time)}</div>
+                                    <div style={{ opacity: 0.7, color: 'var(--text-muted)' }}>{fmt(s.start_time)}–{fmt(s.end_time)}</div>
+                                    {!s.cancelled && (
+                                      <div style={{ marginTop: '2px' }}>
+                                        <FillBar current={s.assigned_count} total={s.required_count} height={4} />
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -532,20 +504,24 @@ export default function DashboardPage() {
                   })}
                 </div>
                 {/* Legenda */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
-                  {[
-                    { color: '#93c5fd', label: 'Le mie sessioni' },
-                    { color: '#4ade80', label: 'Sessione completa' },
-                    { color: '#86efac', label: 'Parzialmente coperta' },
-                    { color: '#f87171', label: 'Senza avventurieri' },
-                    { color: '#fbbf24', label: '⚠ Annullata' },
-                  ].map(({ color, label }) => (
-                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: color, opacity: 0.7 }} />
-                      <span style={{ fontSize: '0.72rem', color: '#a89070' }}>{label}</span>
-                    </div>
-                  ))}
-                  <span style={{ fontSize: '0.72rem', color: '#6b5035', marginLeft: 'auto', fontStyle: 'italic' }}>Clicca una sessione per aprirla</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ width: '28px', height: '6px', borderRadius: '3px' }} className="fill-track"><div className="fill-bar" style={{ width: '40%', height: '100%' }} /></div>
+                    <span style={{ fontSize: '0.72rem', color: '#6b5a3c' }}>Riempimento parziale</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ width: '28px', height: '6px', borderRadius: '3px' }} className="fill-track"><div className="fill-bar full" style={{ width: '100%', height: '100%' }} /></div>
+                    <span style={{ fontSize: '0.72rem', color: '#6b5a3c' }}>Sessione completa</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', border: '1.5px solid #2455a4', background: 'var(--bg-page)' }} />
+                    <span style={{ fontSize: '0.72rem', color: '#6b5a3c' }}>Le mie sessioni</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(169,121,26,0.25)' }} />
+                    <span style={{ fontSize: '0.72rem', color: '#6b5a3c' }}>⚠ Annullata</span>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#9c8a66', marginLeft: 'auto', fontStyle: 'italic' }}>Clicca una sessione per aprirla</span>
                 </div>
               </div>
             )}
@@ -553,40 +529,49 @@ export default function DashboardPage() {
             {/* ── LISTA ── */}
             {viewMode === 'lista' && (
               <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
-                <h2 style={{ fontFamily: 'Cinzel, serif', color: '#c9a227', margin: '0 0 16px', fontSize: '1rem' }}>
+                <h2 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: '0 0 16px', fontSize: '1rem' }}>
                   ⚔️ Sessioni — {MONTHS_IT[calMonth.month]} {calMonth.year}
                 </h2>
                 {monthSessions.length === 0 ? (
-                  <p style={{ color: '#a89070', textAlign: 'center', padding: '32px', fontFamily: 'Cinzel, serif' }}>Nessuna sessione in questo mese</p>
+                  <p style={{ color: '#6b5a3c', textAlign: 'center', padding: '32px', fontFamily: 'Cinzel, serif' }}>Nessuna sessione in questo mese</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {monthSessions.map(s => {
                       const isMySession = userAssignments.some(a => a.shift_id === s.id && a.status === 'assigned');
                       const myAssignment = userAssignments.find(a => a.shift_id === s.id && a.status === 'assigned');
-                      const colors = getSessionColors(s, isMySession);
                       const assignedUsers = s.assigned_users || [];
                       const statusLabel = s.cancelled ? 'Annullata'
                         : s.assigned_count === 0 ? 'Nessun avventuriero'
                         : s.assigned_count < s.required_count ? `${s.assigned_count}/${s.required_count} avventurieri`
                         : `${s.assigned_count}/${s.required_count} ✓`;
                       return (
-                        <div key={s.id} className={`border rounded-xl ${colors.card}`} style={{ padding: '14px' }}>
+                        <div key={s.id} style={{
+                          padding: '14px', borderRadius: '10px',
+                          background: s.cancelled ? 'rgba(169,121,26,0.06)' : 'var(--bg-page)',
+                          border: isMySession ? '1.5px solid #2455a4' : '1px solid var(--border)',
+                          opacity: s.cancelled ? 0.75 : 1,
+                        }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
+                            <div style={{ flex: 1 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                                <span style={{ fontWeight: 700, fontFamily: 'Cinzel, serif', color: s.cancelled ? '#6b5035' : '#c9a227', fontSize: '0.95rem' }}>
+                                <span style={{ fontWeight: 700, fontFamily: 'Cinzel, serif', color: s.cancelled ? '#9c8a66' : '#a9791a', fontSize: '0.95rem' }}>
                                   {s.location_name}
                                 </span>
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colors.badge}`}>{statusLabel}</span>
+                                <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 600, background: 'rgba(169,121,26,0.10)', color: '#6b5a3c' }}>{statusLabel}</span>
                                 {isMySession && !s.cancelled && (
-                                  <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '12px', background: 'rgba(26,52,96,0.4)', color: '#93c5fd', fontWeight: 700 }}>✓ Iscritto</span>
+                                  <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '12px', background: 'rgba(36,85,164,0.14)', color: '#2455a4', fontWeight: 700 }}>✓ Iscritto</span>
                                 )}
                                 {s.has_pizza && <span className="pizza-badge">🍕 Pizza</span>}
                               </div>
-                              <p style={{ margin: '2px 0', fontSize: '0.85rem', color: '#a89070' }}>{fmtDate(s.start_time)}</p>
-                              <p style={{ margin: '2px 0', fontSize: '0.85rem', color: '#a89070' }}>{fmt(s.start_time)} — {fmt(s.end_time)}</p>
+                              <p style={{ margin: '2px 0', fontSize: '0.85rem', color: '#6b5a3c' }}>{fmtDate(s.start_time)}</p>
+                              <p style={{ margin: '2px 0', fontSize: '0.85rem', color: '#6b5a3c' }}>{fmt(s.start_time)} — {fmt(s.end_time)}</p>
+                              {!s.cancelled && (
+                                <div style={{ marginTop: '8px', maxWidth: '220px' }}>
+                                  <FillBar current={s.assigned_count} total={s.required_count} height={7} />
+                                </div>
+                              )}
                               {assignedUsers.length > 0 && !s.cancelled && (
-                                <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#6b5035' }}>
+                                <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#9c8a66' }}>
                                   ⚔️ {assignedUsers.join(', ')}
                                 </p>
                               )}
@@ -603,9 +588,9 @@ export default function DashboardPage() {
                                 disabled={bookingSessionId === s.id}
                                 style={{
                                   marginLeft: '12px', padding: '8px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0, fontFamily: 'Cinzel, serif',
-                                  background: isMySession ? 'rgba(201,162,39,0.1)' : bookingSessionId === s.id ? 'rgba(201,162,39,0.2)' : 'linear-gradient(135deg, #c9a227, #e6c44a)',
-                                  color: isMySession ? '#a89070' : '#0f0a05',
-                                  border: isMySession ? '1px solid #4a2e10' : '1px solid #7a5f14',
+                                  background: isMySession ? 'rgba(169,121,26,0.10)' : bookingSessionId === s.id ? 'rgba(169,121,26,0.2)' : 'linear-gradient(135deg, #a9791a, #c99a2e)',
+                                  color: isMySession ? '#6b5a3c' : '#fffdf6',
+                                  border: isMySession ? '1px solid #d9c99e' : '1px solid #a9791a',
                                 }}
                               >
                                 {isMySession ? '✓ Iscritto' : bookingSessionId === s.id ? '⏳' : '⚔️ Partecipa'}

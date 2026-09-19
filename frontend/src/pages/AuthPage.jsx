@@ -36,8 +36,8 @@ function DerganoLogo() {
               height: '190px',
               width: 'auto',
               objectFit: 'contain',
-              /* drago ha outlines nere → invert per sfondo dark */
-              filter: 'invert(1) drop-shadow(0 0 8px rgba(201,162,39,0.2)) brightness(0.92)',
+              /* drago ha outlines nere — perfetto così su sfondo chiaro */
+              filter: 'drop-shadow(0 0 6px rgba(169,121,26,0.15))',
             }}
           />
         </div>
@@ -46,9 +46,9 @@ function DerganoLogo() {
 
       {/* Separatore ornamentale */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '380px', marginTop: '2px' }}>
-        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #7a5f14, transparent)' }} />
-        <span style={{ color: '#c9a227', fontSize: '0.7rem' }}>✦</span>
-        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #7a5f14, transparent)' }} />
+        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #a9791a, transparent)' }} />
+        <span style={{ color: '#a9791a', fontSize: '0.7rem' }}>✦</span>
+        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #a9791a, transparent)' }} />
       </div>
     </div>
   );
@@ -103,22 +103,22 @@ export default function AuthPage() {
   };
 
   const cardStyle = {
-    backgroundColor: 'var(--bg-card, #231508)',
-    border: '1px solid var(--border, #4a2e10)',
+    backgroundColor: 'var(--bg-card, #fffdf6)',
+    border: '1px solid var(--border, #d9c99e)',
     borderRadius: '12px',
     padding: '2.5rem',
     width: '100%',
     maxWidth: '440px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(201,162,39,0.1)',
+    boxShadow: '0 8px 28px rgba(80,60,20,0.15), 0 0 0 1px rgba(169,121,26,0.08)',
   };
 
   const inputStyle = {
     width: '100%',
     padding: '10px 14px',
-    backgroundColor: 'var(--bg-surface, #2e1c0d)',
-    border: '1px solid var(--border, #4a2e10)',
+    backgroundColor: 'var(--bg-surface, #ece2c8)',
+    border: '1px solid var(--border, #d9c99e)',
     borderRadius: '8px',
-    color: 'var(--text, #e8d5b7)',
+    color: 'var(--text, #2c2011)',
     fontSize: '0.95rem',
     fontFamily: 'var(--font-body, serif)',
     outline: 'none',
@@ -128,16 +128,16 @@ export default function AuthPage() {
   const btnStyle = {
     width: '100%',
     padding: '11px',
-    background: 'linear-gradient(135deg, #c9a227, #e6c44a)',
-    color: '#0f0a05',
-    border: '1px solid #7a5f14',
+    background: 'linear-gradient(135deg, #a9791a, #c99a2e)',
+    color: '#fffdf6',
+    border: '1px solid #a9791a',
     borderRadius: '8px',
     fontFamily: 'Cinzel, Georgia, serif',
     fontWeight: 700,
     fontSize: '0.9rem',
     letterSpacing: '1px',
     cursor: 'pointer',
-    boxShadow: '0 0 10px rgba(201,162,39,0.3)',
+    boxShadow: '0 2px 10px rgba(169,121,26,0.25)',
     transition: 'all 0.2s',
   };
 
@@ -148,7 +148,7 @@ export default function AuthPage() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
-      background: 'radial-gradient(ellipse at center, #231508 0%, #0f0a05 100%)',
+      background: 'radial-gradient(ellipse at center, #fffdf6 0%, #f3ecdb 100%)',
     }}>
       <div style={cardStyle}>
         <DerganoLogo />
@@ -157,7 +157,7 @@ export default function AuthPage() {
           fontFamily: 'Cinzel, serif',
           fontSize: '0.95rem',
           textAlign: 'center',
-          color: 'var(--text-muted, #a89070)',
+          color: 'var(--text-muted, #6b5a3c)',
           marginBottom: '1.5rem',
           marginTop: '1rem',
           letterSpacing: '1px',
@@ -167,9 +167,9 @@ export default function AuthPage() {
 
         {error && (
           <div style={{
-            background: 'rgba(139,26,26,0.25)',
-            border: '1px solid rgba(139,26,26,0.5)',
-            color: '#f87171',
+            background: 'rgba(179,38,30,0.10)',
+            border: '1px solid rgba(179,38,30,0.35)',
+            color: '#a3261e',
             padding: '10px 14px',
             borderRadius: '8px',
             marginBottom: '16px',
@@ -215,7 +215,7 @@ export default function AuthPage() {
               onClick={() => setShowPwd(!showPwd)}
               style={{
                 position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: '#a89070',
+                background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: '#9c8a66',
               }}
             >
               {showPwd ? '🙈' : '👁'}
@@ -226,11 +226,11 @@ export default function AuthPage() {
           </button>
         </form>
 
-        <div style={{ marginTop: '1.5rem', textAlign: 'center', color: 'var(--text-muted, #a89070)', fontSize: '0.88rem' }}>
+        <div style={{ marginTop: '1.5rem', textAlign: 'center', color: 'var(--text-muted, #6b5a3c)', fontSize: '0.88rem' }}>
           {isLogin ? 'Non hai ancora un Eroe? ' : 'Hai già un account? '}
           <button
             onClick={() => setIsLogin(!isLogin)}
-            style={{ background: 'none', border: 'none', color: '#c9a227', cursor: 'pointer', fontWeight: 700, fontFamily: 'Cinzel, serif', textDecoration: 'underline' }}
+            style={{ background: 'none', border: 'none', color: '#a9791a', cursor: 'pointer', fontWeight: 700, fontFamily: 'Cinzel, serif', textDecoration: 'underline' }}
           >
             {isLogin ? 'Registrati' : 'Accedi'}
           </button>
@@ -241,7 +241,7 @@ export default function AuthPage() {
               onClick={() => setShowReset(true)}
               style={{
                 display: 'block', width: '100%', marginTop: '10px',
-                background: 'none', border: 'none', color: '#6b5035',
+                background: 'none', border: 'none', color: '#9c8a66',
                 cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline',
               }}
             >
@@ -255,11 +255,11 @@ export default function AuthPage() {
       {showReset && (
         <div style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.7)',
+          background: 'rgba(44,32,17,0.45)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
         }}>
           <div style={{ ...cardStyle, maxWidth: '340px' }}>
-            <h3 style={{ fontFamily: 'Cinzel, serif', color: '#c9a227', marginBottom: '16px' }}>🔑 Reimposta password</h3>
+            <h3 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', marginBottom: '16px' }}>🔑 Reimposta password</h3>
             <form onSubmit={handleReset} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <input type="email" placeholder="Email" value={resetForm.email}
                 onChange={e => setResetForm(p => ({ ...p, email: e.target.value }))}
@@ -269,7 +269,7 @@ export default function AuthPage() {
                 required minLength={6} style={inputStyle} />
               <button type="submit" style={btnStyle}>Reimposta</button>
               <button type="button" onClick={() => setShowReset(false)}
-                style={{ ...btnStyle, background: 'transparent', color: '#a89070', border: '1px solid #4a2e10', boxShadow: 'none' }}>
+                style={{ ...btnStyle, background: 'transparent', color: '#6b5a3c', border: '1px solid #d9c99e', boxShadow: 'none' }}>
                 Annulla
               </button>
             </form>
