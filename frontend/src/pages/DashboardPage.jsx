@@ -463,11 +463,12 @@ export default function DashboardPage() {
                     const daySessions = day ? (sessionsByDay[day] || []) : [];
                     const today = new Date();
                     const isToday = day && today.getDate() === day && today.getMonth() === calMonth.month && today.getFullYear() === calMonth.year;
+                    const hasSessions = daySessions.length > 0;
                     return (
                       <div
                         key={idx}
                         style={{
-                          minHeight: '104px', borderRadius: '6px', padding: '3px',
+                          minHeight: hasSessions ? '104px' : '46px', borderRadius: '6px', padding: '3px',
                           background: !day ? 'transparent' : isToday ? 'rgba(169,121,26,0.06)' : 'var(--bg-surface)',
                           border: !day ? '1px solid transparent' : isToday ? '1px solid rgba(169,121,26,0.35)' : '1px solid var(--border)',
                         }}
