@@ -50,26 +50,32 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
   if (!session) return null;
   const fmt = (dt) => new Date(dt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   const fmtDate = (dt) => new Date(dt).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const myAssignment = userAssignments.find(a => a.shift_id === session.id && a.status === 'assigned');
-  const isAssigned = !!myAssignment;
+  const myAssignment = userAssignments.find(a => a.shift_id === session.id && ['assigned', 'waiting'].includes(a.status));
+  const isAssigned = myAssignment?.status === 'assigned';
+  const isWaitingMe = myAssignment?.status === 'waiting';
+  const isRegistered = isAssigned || isWaitingMe;
   const fullyC = session.assigned_count >= session.required_count;
   const partial = session.assigned_count > 0 && session.assigned_count < session.required_count;
   const assignedUsers = session.assigned_users || [];
+  const waitingUsers = session.waiting_users || [];
   const [isBooking, setIsBooking] = useState(false);
 
   const statusLabel = session.cancelled ? 'Annullata'
     : isAssigned ? '✓ Sei registrato'
+    : isWaitingMe ? '⏳ Sei in lista d\'attesa'
     : fullyC ? 'Completa'
     : partial ? 'Parzialmente coperta'
     : 'Senza avventurieri';
 
   const statusBg = session.cancelled ? 'rgba(169,121,26,0.14)'
     : isAssigned ? 'rgba(36,85,164,0.14)'
+    : isWaitingMe ? 'rgba(169,121,26,0.16)'
     : fullyC ? 'rgba(169,121,26,0.18)'
     : partial ? 'rgba(47,125,58,0.14)'
     : 'rgba(179,38,30,0.12)';
   const statusText = session.cancelled ? '#8a651b'
     : isAssigned ? '#2455a4'
+    : isWaitingMe ? '#8a651b'
     : fullyC ? '#a9791a'
     : partial ? '#206a2a'
     : '#a3261e';
@@ -139,7 +145,7 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
         </div>
 
         {assignedUsers.length > 0 && (
-          <div style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: waitingUsers.length > 0 ? '12px' : '20px' }}>
             <p style={{ fontSize: '0.72rem', color: '#9c8a66', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Cinzel, serif' }}>
               Avventurieri
             </p>
@@ -161,20 +167,48 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
           </div>
         )}
 
+        {waitingUsers.length > 0 && (
+          <div style={{ marginBottom: '20px' }}>
+            <p style={{ fontSize: '0.72rem', color: '#8a651b', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Cinzel, serif' }}>
+              ⏳ Lista d'attesa
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {waitingUsers.map((name, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-muted, #6b5a3c)' }}>
+                  <span style={{
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    background: 'rgba(169,121,26,0.10)', border: '1px dashed rgba(169,121,26,0.4)',
+                    color: '#8a651b', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.72rem', fontWeight: 700, flexShrink: 0,
+                  }}>
+                    {i + 1}
+                  </span>
+                  {name}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {session.cancelled ? (
           <div style={{ background: 'rgba(169,121,26,0.12)', border: '1px solid rgba(169,121,26,0.25)', borderRadius: '8px', padding: '12px', textAlign: 'center', color: '#8a651b', fontSize: '0.85rem' }}>
             Questa sessione è stata annullata dall'organizzazione.
           </div>
-        ) : isAssigned ? (
+        ) : isRegistered ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ background: 'rgba(36,85,164,0.10)', border: '1px solid rgba(36,85,164,0.3)', borderRadius: '8px', padding: '10px', textAlign: 'center', color: '#2455a4', fontSize: '0.88rem', fontWeight: 600 }}>
-              ✓ Sei registrato a questa sessione
+            <div style={{
+              background: isWaitingMe ? 'rgba(169,121,26,0.10)' : 'rgba(36,85,164,0.10)',
+              border: `1px solid ${isWaitingMe ? 'rgba(169,121,26,0.3)' : 'rgba(36,85,164,0.3)'}`,
+              borderRadius: '8px', padding: '10px', textAlign: 'center',
+              color: isWaitingMe ? '#8a651b' : '#2455a4', fontSize: '0.88rem', fontWeight: 600,
+            }}>
+              {isWaitingMe ? '⏳ Sei in lista d\'attesa — verrai promosso se si libera un posto' : '✓ Sei registrato a questa sessione'}
             </div>
             <button
               onClick={() => { onCancel(myAssignment.id); onClose(); }}
               style={{ width: '100%', padding: '10px', background: 'rgba(179,38,30,0.10)', color: '#a3261e', border: '1px solid rgba(179,38,30,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem' }}
             >
-              Annulla partecipazione
+              {isWaitingMe ? 'Esci dalla lista d\'attesa' : 'Annulla partecipazione'}
             </button>
           </div>
         ) : (
@@ -190,7 +224,7 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
               boxShadow: isBooking ? 'none' : '0 2px 10px rgba(169,121,26,0.25)',
             }}
           >
-            {isBooking ? '⏳ Registrazione...' : '⚔️ Unisciti all\'avventura'}
+            {isBooking ? '⏳ Registrazione...' : fullyC ? '⏳ Iscriviti in lista d\'attesa' : '⚔️ Unisciti all\'avventura'}
           </button>
         )}
       </div>
@@ -246,22 +280,12 @@ export default function DashboardPage() {
   };
 
   const handleAssign = async (sessionId) => {
-    setSessions(prev => prev.map(s => s.id === sessionId
-      ? { ...s, assigned_count: s.assigned_count + 1, assigned_users: [...(s.assigned_users || []), user.name] }
-      : s
-    ));
-    setUserAssignments(prev => [...prev, {
-      id: -1,
-      shift_id: sessionId,
-      status: 'assigned',
-      start_time: sessions.find(s => s.id === sessionId)?.start_time || '',
-    }]);
     try {
-      await assignmentsAPI.assignShift(sessionId);
-      showToast('⚔️ Sei nell\'avventura!');
-      loadSessions(true);
+      const res = await assignmentsAPI.assignShift(sessionId);
+      const isWaiting = res.data?.assignment?.status === 'waiting';
+      showToast(isWaiting ? '⏳ Sessione al completo — sei in lista d\'attesa' : '⚔️ Sei nell\'avventura!');
+      await loadSessions(true);
     } catch (err) {
-      loadSessions(true);
       showToast('❌ ' + (err.response?.data?.error || 'Errore nella registrazione'));
       throw err;
     }
@@ -291,17 +315,6 @@ export default function DashboardPage() {
     const d = new Date(s.start_time);
     return d.getFullYear() === calMonth.year && d.getMonth() === calMonth.month;
   });
-  const activeSessions = monthSessions.filter(s => !s.cancelled);
-  const coveredCount = activeSessions.filter(s => s.assigned_count >= s.required_count).length;
-  const partialCount = activeSessions.filter(s => s.assigned_count > 0 && s.assigned_count < s.required_count).length;
-  const coveragePercent = activeSessions.length > 0
-    ? Math.round((coveredCount + partialCount) / activeSessions.length * 100) : 0;
-  const myMonthBookings = userAssignments.filter(a => {
-    if (a.status !== 'assigned') return false;
-    const d = new Date(a.start_time);
-    return d.getFullYear() === calMonth.year && d.getMonth() === calMonth.month;
-  });
-
   const daysInMonth = new Date(calMonth.year, calMonth.month + 1, 0).getDate();
   const rawFirstDay = new Date(calMonth.year, calMonth.month, 1).getDay();
   const firstDay = (rawFirstDay + 6) % 7;
@@ -319,12 +332,6 @@ export default function DashboardPage() {
 
   const fmt = (dt) => new Date(dt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   const fmtDate = (dt) => new Date(dt).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
-
-  const coverageColor = coveragePercent >= 80
-    ? { bg: 'rgba(47,125,58,0.12)', text: '#206a2a', num: '#206a2a', border: 'rgba(47,125,58,0.3)' }
-    : coveragePercent >= 50
-    ? { bg: 'rgba(169,121,26,0.12)', text: '#8a651b', num: '#8a651b', border: 'rgba(169,121,26,0.3)' }
-    : { bg: 'rgba(179,38,30,0.10)', text: '#a3261e', num: '#a3261e', border: 'rgba(179,38,30,0.25)' };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-page, #f3ecdb)' }}>
@@ -400,21 +407,6 @@ export default function DashboardPage() {
           <button onClick={nextMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: '#a9791a', fontSize: '1.2rem', cursor: 'pointer' }}>›</button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-          <div style={{ padding: '16px', borderRadius: '10px', background: coverageColor.bg, border: `1px solid ${coverageColor.border}` }}>
-            <p style={{ margin: 0, fontSize: '0.82rem', color: coverageColor.text, fontFamily: 'Cinzel, serif' }}>Copertura del mese</p>
-            <p style={{ margin: '4px 0 0', fontSize: '2rem', fontWeight: 900, color: coverageColor.num, fontFamily: 'Cinzel, serif' }}>{coveragePercent}%</p>
-            <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: coverageColor.text, opacity: 0.85 }}>
-              {coveredCount + partialCount}/{activeSessions.length} sessioni coperte
-            </p>
-          </div>
-          <div style={{ padding: '16px', borderRadius: '10px', background: 'rgba(36,85,164,0.08)', border: '1px solid rgba(36,85,164,0.25)' }}>
-            <p style={{ margin: 0, fontSize: '0.82rem', color: '#2455a4', fontFamily: 'Cinzel, serif' }}>Le mie sessioni</p>
-            <p style={{ margin: '4px 0 0', fontSize: '2rem', fontWeight: 900, color: '#2455a4', fontFamily: 'Cinzel, serif' }}>{myMonthBookings.length}</p>
-            <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#2455a4', opacity: 0.85 }}>questo mese</p>
-          </div>
-        </div>
-
         <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: 'var(--bg-card)', padding: '4px', borderRadius: '10px', width: 'fit-content', border: '1px solid var(--border)' }}>
           {['calendario', 'lista'].map(mode => (
             <button
@@ -472,7 +464,9 @@ export default function DashboardPage() {
                             <p style={{ fontSize: '0.72rem', fontWeight: 700, margin: '0 0 2px 2px', color: isToday ? '#a9791a' : '#9c8a66', fontFamily: 'Cinzel, serif' }}>{day}</p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                               {daySessions.map(s => {
-                                const isMySession = userAssignments.some(a => a.shift_id === s.id && a.status === 'assigned');
+                                const myA = userAssignments.find(a => a.shift_id === s.id && ['assigned', 'waiting'].includes(a.status));
+                                const isMySession = myA?.status === 'assigned';
+                                const isMyWaiting = myA?.status === 'waiting';
                                 return (
                                   <div
                                     key={s.id}
@@ -481,11 +475,11 @@ export default function DashboardPage() {
                                       fontSize: '0.66rem', padding: '2px 4px', borderRadius: '4px', cursor: 'pointer',
                                       opacity: s.cancelled ? 0.6 : 1,
                                       background: s.cancelled ? 'rgba(169,121,26,0.12)' : 'var(--bg-page)',
-                                      border: isMySession ? '1.5px solid #2455a4' : '1px solid var(--border)',
+                                      border: isMySession ? '1.5px solid #2455a4' : isMyWaiting ? '1.5px dashed #a9791a' : '1px solid var(--border)',
                                     }}
                                   >
                                     <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
-                                      {s.cancelled && '⚠ '}{s.has_pizza && '🍕 '}{s.location_name}
+                                      {s.cancelled && '⚠ '}{isMyWaiting && '⏳ '}{s.has_pizza && '🍕 '}{s.location_name}
                                     </div>
                                     <div style={{ opacity: 0.7, color: 'var(--text-muted)' }}>{fmt(s.start_time)}–{fmt(s.end_time)}</div>
                                     {!s.cancelled && (
@@ -518,6 +512,10 @@ export default function DashboardPage() {
                     <span style={{ fontSize: '0.72rem', color: '#6b5a3c' }}>Le mie sessioni</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', border: '1.5px dashed #a9791a', background: 'var(--bg-page)' }} />
+                    <span style={{ fontSize: '0.72rem', color: '#6b5a3c' }}>⏳ In lista d'attesa</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(169,121,26,0.25)' }} />
                     <span style={{ fontSize: '0.72rem', color: '#6b5a3c' }}>⚠ Annullata</span>
                   </div>
@@ -537,9 +535,12 @@ export default function DashboardPage() {
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {monthSessions.map(s => {
-                      const isMySession = userAssignments.some(a => a.shift_id === s.id && a.status === 'assigned');
-                      const myAssignment = userAssignments.find(a => a.shift_id === s.id && a.status === 'assigned');
+                      const myAssignment = userAssignments.find(a => a.shift_id === s.id && ['assigned', 'waiting'].includes(a.status));
+                      const isMySession = myAssignment?.status === 'assigned';
+                      const isMyWaiting = myAssignment?.status === 'waiting';
                       const assignedUsers = s.assigned_users || [];
+                      const waitingUsers = s.waiting_users || [];
+                      const fullyC = s.assigned_count >= s.required_count;
                       const statusLabel = s.cancelled ? 'Annullata'
                         : s.assigned_count === 0 ? 'Nessun avventuriero'
                         : s.assigned_count < s.required_count ? `${s.assigned_count}/${s.required_count} avventurieri`
@@ -548,7 +549,7 @@ export default function DashboardPage() {
                         <div key={s.id} style={{
                           padding: '14px', borderRadius: '10px',
                           background: s.cancelled ? 'rgba(169,121,26,0.06)' : 'var(--bg-page)',
-                          border: isMySession ? '1.5px solid #2455a4' : '1px solid var(--border)',
+                          border: isMySession ? '1.5px solid #2455a4' : isMyWaiting ? '1.5px dashed #a9791a' : '1px solid var(--border)',
                           opacity: s.cancelled ? 0.75 : 1,
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -560,6 +561,9 @@ export default function DashboardPage() {
                                 <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 600, background: 'rgba(169,121,26,0.10)', color: '#6b5a3c' }}>{statusLabel}</span>
                                 {isMySession && !s.cancelled && (
                                   <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '12px', background: 'rgba(36,85,164,0.14)', color: '#2455a4', fontWeight: 700 }}>✓ Iscritto</span>
+                                )}
+                                {isMyWaiting && !s.cancelled && (
+                                  <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '12px', background: 'rgba(169,121,26,0.16)', color: '#8a651b', fontWeight: 700 }}>⏳ In lista d'attesa</span>
                                 )}
                                 {s.has_pizza && <span className="pizza-badge">🍕 Pizza</span>}
                               </div>
@@ -575,11 +579,16 @@ export default function DashboardPage() {
                                   ⚔️ {assignedUsers.join(', ')}
                                 </p>
                               )}
+                              {waitingUsers.length > 0 && !s.cancelled && (
+                                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#8a651b' }}>
+                                  ⏳ Attesa: {waitingUsers.join(', ')}
+                                </p>
+                              )}
                             </div>
                             {!s.cancelled && (
                               <button
                                 onClick={async () => {
-                                  if (isMySession) { handleCancel(myAssignment?.id); }
+                                  if (isMySession || isMyWaiting) { handleCancel(myAssignment?.id); }
                                   else {
                                     setBookingSessionId(s.id);
                                     try { await handleAssign(s.id); } catch(e) {} finally { setBookingSessionId(null); }
@@ -588,12 +597,12 @@ export default function DashboardPage() {
                                 disabled={bookingSessionId === s.id}
                                 style={{
                                   marginLeft: '12px', padding: '8px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0, fontFamily: 'Cinzel, serif',
-                                  background: isMySession ? 'rgba(169,121,26,0.10)' : bookingSessionId === s.id ? 'rgba(169,121,26,0.2)' : 'linear-gradient(135deg, #a9791a, #c99a2e)',
-                                  color: isMySession ? '#6b5a3c' : '#fffdf6',
-                                  border: isMySession ? '1px solid #d9c99e' : '1px solid #a9791a',
+                                  background: (isMySession || isMyWaiting) ? 'rgba(169,121,26,0.10)' : bookingSessionId === s.id ? 'rgba(169,121,26,0.2)' : 'linear-gradient(135deg, #a9791a, #c99a2e)',
+                                  color: (isMySession || isMyWaiting) ? '#6b5a3c' : '#fffdf6',
+                                  border: (isMySession || isMyWaiting) ? '1px solid #d9c99e' : '1px solid #a9791a',
                                 }}
                               >
-                                {isMySession ? '✓ Iscritto' : bookingSessionId === s.id ? '⏳' : '⚔️ Partecipa'}
+                                {isMySession ? '✓ Iscritto' : isMyWaiting ? '⏳ In attesa' : bookingSessionId === s.id ? '⏳' : fullyC ? '⏳ Lista d\'attesa' : '⚔️ Partecipa'}
                               </button>
                             )}
                           </div>
