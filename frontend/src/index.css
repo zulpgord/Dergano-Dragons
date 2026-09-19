@@ -348,7 +348,7 @@ button.border-indigo-600 { color: var(--gold) !important; }
 .calendar-side-art-wrap {
   position: relative;
   flex-shrink: 0;
-  width: clamp(140px, 15vw, 220px);
+  width: clamp(260px, 27vw, 440px);
 }
 .calendar-side-art {
   position: absolute;
