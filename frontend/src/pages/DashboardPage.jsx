@@ -401,7 +401,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px 16px' }}>
+      <main style={{ maxWidth: '1650px', margin: '0 auto', padding: '24px 16px' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <button onClick={prevMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: '#a9791a', fontSize: '1.2rem', cursor: 'pointer' }}>‹</button>
@@ -468,7 +468,7 @@ export default function DashboardPage() {
                       <div
                         key={idx}
                         style={{
-                          minHeight: hasSessions ? '104px' : '46px', borderRadius: '6px', padding: '3px',
+                          minHeight: '104px', borderRadius: '6px', padding: '3px',
                           background: !day ? 'transparent' : isToday ? 'rgba(169,121,26,0.06)' : 'var(--bg-surface)',
                           border: !day ? '1px solid transparent' : isToday ? '1px solid rgba(169,121,26,0.35)' : '1px solid var(--border)',
                         }}
