@@ -1,0 +1,270 @@
+/* ══════════════════════════════════════════════════════════
+   DERGANO & DRAGONS — Fantasy Theme
+   ══════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=IM+Fell+English:ital@0;1&display=swap');
+
+/* ── Palette fantasy ── */
+:root {
+  /* Backgrounds */
+  --bg-deep:    #0f0a05;
+  --bg-dark:    #1a1008;
+  --bg-card:    #231508;
+  --bg-surface: #2e1c0d;
+  --bg-hover:   #3a2411;
+
+  /* Accents */
+  --gold:       #c9a227;
+  --gold-light: #e6c44a;
+  --gold-dim:   #7a5f14;
+  --red:        #8b1a1a;
+  --red-light:  #b32020;
+  --green:      #1a5c2e;
+  --green-light:#22763b;
+  --blue:       #1a3460;
+  --blue-light: #234a8c;
+
+  /* Text */
+  --text:       #e8d5b7;
+  --text-muted: #a89070;
+  --text-dim:   #6b5035;
+
+  /* Borders */
+  --border:     #4a2e10;
+  --border-gold:#7a5f14;
+
+  /* Shadows */
+  --shadow-glow: 0 0 12px rgba(201,162,39,0.25), 0 4px 16px rgba(0,0,0,0.6);
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.5);
+
+  /* Fonts */
+  --font-title: 'Cinzel', Georgia, serif;
+  --font-body:  'IM Fell English', Georgia, serif;
+
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text);
+  background-color: var(--bg-dark);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--bg-dark);
+  color: var(--text);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(139,26,26,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(201,162,39,0.04) 0%, transparent 60%);
+  background-attachment: fixed;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-title);
+  color: var(--gold);
+  letter-spacing: 1px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   OVERRIDE TAILWIND — tutte le classi usate nei componenti
+   ══════════════════════════════════════════════════════════ */
+
+/* Backgrounds */
+.min-h-screen           { min-height: 100vh; }
+.bg-gray-50             { background-color: var(--bg-dark) !important; }
+.bg-white               { background-color: var(--bg-card) !important; }
+.bg-gray-100            { background-color: var(--bg-surface) !important; }
+.bg-gray-200            { background-color: var(--bg-hover) !important; }
+.bg-indigo-50           { background-color: rgba(26,52,96,0.3) !important; }
+.bg-indigo-100          { background-color: rgba(26,52,96,0.4) !important; }
+.bg-indigo-600          { background-color: var(--gold) !important; color: var(--bg-deep) !important; }
+.bg-indigo-700          { background-color: var(--gold-light) !important; color: var(--bg-deep) !important; }
+.bg-indigo-400          { background-color: var(--gold-dim) !important; }
+.bg-red-50              { background-color: rgba(139,26,26,0.2) !important; }
+.bg-red-100             { background-color: rgba(139,26,26,0.3) !important; }
+.bg-green-50            { background-color: rgba(26,92,46,0.2) !important; }
+.bg-green-100           { background-color: rgba(26,92,46,0.3) !important; }
+.bg-green-300           { background-color: rgba(34,118,59,0.4) !important; }
+.bg-yellow-50           { background-color: rgba(92,70,10,0.25) !important; }
+.bg-yellow-100          { background-color: rgba(92,70,10,0.35) !important; }
+.bg-blue-50             { background-color: rgba(26,52,96,0.25) !important; }
+
+/* Gradient override */
+.bg-gradient-to-br      { background: radial-gradient(ellipse at center, var(--bg-surface) 0%, var(--bg-dark) 100%) !important; }
+.from-gray-50, .to-indigo-50 { /* absorbed by gradient above */ }
+
+/* Text colors */
+.text-gray-900          { color: var(--text) !important; }
+.text-gray-800          { color: var(--text) !important; }
+.text-gray-700          { color: var(--text-muted) !important; }
+.text-gray-600          { color: var(--text-muted) !important; }
+.text-gray-500          { color: var(--text-dim) !important; }
+.text-gray-400          { color: var(--text-dim) !important; }
+.text-indigo-600        { color: var(--gold) !important; }
+.text-indigo-700        { color: var(--gold) !important; }
+.text-indigo-600.font-semibold { color: var(--gold) !important; }
+.text-green-700         { color: #4ade80 !important; }
+.text-green-900         { color: #86efac !important; }
+.text-red-700           { color: #f87171 !important; }
+.text-red-600           { color: #f87171 !important; }
+.text-yellow-700        { color: #fbbf24 !important; }
+.text-yellow-600        { color: #fbbf24 !important; }
+.text-blue-700          { color: #93c5fd !important; }
+.text-blue-600          { color: #93c5fd !important; }
+.text-white             { color: var(--bg-deep) !important; }
+
+/* Borders */
+.border                 { border-color: var(--border) !important; }
+.border-gray-200        { border-color: var(--border) !important; }
+.border-gray-300        { border-color: var(--border) !important; }
+.border-indigo-300      { border-color: var(--gold-dim) !important; }
+.border-indigo-500      { border-color: var(--gold) !important; }
+.border-red-200         { border-color: rgba(139,26,26,0.5) !important; }
+.border-green-100       { border-color: rgba(26,92,46,0.4) !important; }
+.border-green-300       { border-color: rgba(34,118,59,0.5) !important; }
+.border-yellow-200      { border-color: rgba(201,162,39,0.3) !important; }
+.border-yellow-300      { border-color: rgba(201,162,39,0.4) !important; }
+.border-blue-100        { border-color: rgba(26,52,96,0.4) !important; }
+.border-blue-200        { border-color: rgba(26,52,96,0.5) !important; }
+.border-b               { border-bottom-color: var(--border) !important; }
+.border-t               { border-top-color: var(--border) !important; }
+
+/* Cards with fantasy border */
+.rounded-2xl,
+.rounded-xl,
+.rounded-lg,
+.rounded {
+  border: 1px solid var(--border) !important;
+}
+
+/* Shadow */
+.shadow-lg, .shadow-xl, .shadow { box-shadow: var(--shadow-card) !important; }
+
+/* Buttons overrides */
+button.bg-indigo-600,
+button.bg-indigo-600:hover {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%) !important;
+  color: var(--bg-deep) !important;
+  font-family: var(--font-title) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  border: 1px solid var(--gold-dim) !important;
+  box-shadow: 0 0 8px rgba(201,162,39,0.3) !important;
+  transition: all 0.2s ease !important;
+}
+button.bg-indigo-600:hover {
+  box-shadow: 0 0 16px rgba(201,162,39,0.5) !important;
+  transform: translateY(-1px) !important;
+}
+button.bg-red-50 {
+  background-color: rgba(139,26,26,0.2) !important;
+  color: #f87171 !important;
+  border-color: rgba(139,26,26,0.4) !important;
+}
+button.text-indigo-600:hover { color: var(--gold-light) !important; }
+
+/* Inputs */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="time"],
+input[type="number"],
+select,
+textarea {
+  background-color: var(--bg-surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+input::placeholder, textarea::placeholder { color: var(--text-dim) !important; }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--gold-dim) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(201,162,39,0.2) !important;
+}
+
+/* Header fantasy */
+header.bg-white {
+  background: linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-card) 100%) !important;
+  border-bottom: 2px solid var(--border-gold) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.6) !important;
+}
+
+/* Tab bar */
+.border-indigo-600 { border-color: var(--gold) !important; }
+button.border-indigo-600 { color: var(--gold) !important; }
+
+/* Focus ring */
+.focus\:ring-2:focus,
+.focus\:ring-indigo-500:focus {
+  --tw-ring-color: rgba(201,162,39,0.4) !important;
+}
+
+/* Toggle view */
+.bg-indigo-100.text-indigo-700 {
+  background-color: rgba(201,162,39,0.15) !important;
+  color: var(--gold) !important;
+}
+
+/* Fantasy divider */
+.border-t.border-gray-100 { border-top-color: var(--border) !important; }
+
+/* Toast */
+.bg-green-600  { background-color: var(--green-light) !important; color: var(--text) !important; }
+.bg-red-600 { background-color: var(--red) !important; color: var(--text) !important; }
+
+/* ── Decorazione angolare sulle card principali ── */
+.rounded-xl.shadow-sm::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--gold-dim) 0%, transparent 40%, transparent 60%, var(--gold-dim) 100%);
+  pointer-events: none;
+  opacity: 0.4;
+}
+.rounded-xl.shadow-sm { position: relative; overflow: hidden; }
+
+/* Badge pill fantasy */
+.rounded-full {
+  border: none !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--border-gold); border-radius: 3px; }
+
+/* Disabled */
+.disabled\:opacity-50:disabled, .opacity-60 { opacity: 0.5; }
+
+/* ── Pizza badge specifico ── */
+.pizza-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(201,162,39,0.15);
+  border: 1px solid rgba(201,162,39,0.4);
+  color: var(--gold);
+  padding: 1px 6px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-family: var(--font-title);
+}
+
+/* ── Fantasy ornament headings ── */
+.fantasy-title {
+  font-family: var(--font-title);
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(201,162,39,0.3);
+  letter-spacing: 2px;
+}
+
