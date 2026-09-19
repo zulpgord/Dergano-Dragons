@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { shiftsAPI, locationsAPI, adminAPI, authAPI } from '../services/api';
+import { shiftsAPI, locationsAPI, adminAPI, authAPI, groupsAPI } from '../services/api';
 
 function getWeekStart(date) {
   const d = new Date(date);
@@ -144,8 +144,11 @@ function SessionsSection({ locations }) {
     duration: 2,
     required_count: 1,
     has_pizza: false,
+    visible_to_all: true,
+    group_ids: [],
   });
 
+  const [groups, setGroups] = useState([]);
   const [allSessions, setAllSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [rangeMode, setRangeMode] = useState('mese'); // 'settimana' | 'mese'
@@ -158,6 +161,10 @@ function SessionsSection({ locations }) {
   const [editData, setEditData] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
   const [detailSession, setDetailSession] = useState(null);
+
+  useEffect(() => {
+    groupsAPI.getGroups().then(res => setGroups(res.data)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (locations.length > 0 && !formData.location_id) {
@@ -187,6 +194,8 @@ function SessionsSection({ locations }) {
       duration: durationHrs,
       required_count: s.required_count || 1,
       has_pizza: !!s.has_pizza,
+      visible_to_all: s.visible_to_all !== false,
+      group_ids: (s.groups || []).map(g => g.id),
     });
   };
 
@@ -195,6 +204,13 @@ function SessionsSection({ locations }) {
     setEditData(p => ({
       ...p,
       [name]: type === 'checkbox' ? checked : (['required_count', 'duration'].includes(name) ? parseFloat(value) : value),
+    }));
+  };
+
+  const toggleEditGroup = (groupId) => {
+    setEditData(p => ({
+      ...p,
+      group_ids: p.group_ids.includes(groupId) ? p.group_ids.filter(id => id !== groupId) : [...p.group_ids, groupId],
     }));
   };
 
@@ -211,6 +227,8 @@ function SessionsSection({ locations }) {
         end_time: end.toISOString(),
         required_count: editData.required_count,
         has_pizza: editData.has_pizza,
+        visible_to_all: editData.visible_to_all,
+        group_ids: editData.group_ids,
       });
       setEditingSession(null);
       await loadSessions();
@@ -276,7 +294,16 @@ function SessionsSection({ locations }) {
       end_time: end.toISOString(),
       required_count: formData.required_count,
       has_pizza: formData.has_pizza,
+      visible_to_all: formData.visible_to_all,
+      group_ids: formData.group_ids,
     };
+  };
+
+  const toggleFormGroup = (groupId) => {
+    setFormData(p => ({
+      ...p,
+      group_ids: p.group_ids.includes(groupId) ? p.group_ids.filter(id => id !== groupId) : [...p.group_ids, groupId],
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -289,7 +316,7 @@ function SessionsSection({ locations }) {
       await Promise.all(targets.map(t => shiftsAPI.createShift(t)));
       alert(`✅ ${targets.length} sessione/i creata/e!`);
       setShowForm(false);
-      setFormData(p => ({ ...p, date: '', start_hour: '09:00', duration: 2, required_count: 1, has_pizza: false }));
+      setFormData(p => ({ ...p, date: '', start_hour: '09:00', duration: 2, required_count: 1, has_pizza: false, visible_to_all: true, group_ids: [] }));
       await loadSessions();
     } catch (err) {
       alert(err.response?.data?.error || 'Errore nella creazione della sessione');
@@ -319,7 +346,7 @@ function SessionsSection({ locations }) {
                 {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
               </select>
             </div>
-            {[['date','Data','date'],['start_hour','Ora inizio','time'],['duration','Durata (ore)','number'],['required_count','Avv. minimi','number']].map(([name,label,type]) => (
+            {[['date','Data','date'],['start_hour','Ora inizio','time'],['duration','Durata (ore)','number'],['required_count','Avv. massimi','number']].map(([name,label,type]) => (
               <div key={name}>
                 <label style={{ fontSize: '0.72rem', color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>{label}</label>
                 <input type={type} name={name} value={editData[name]} onChange={handleEditChange}
@@ -331,6 +358,35 @@ function SessionsSection({ locations }) {
               <input type="checkbox" name="has_pizza" checked={!!editData.has_pizza} onChange={handleEditChange}
                 style={{ width: '16px', height: '16px', accentColor: '#a9791a' }} />
               <label style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', fontSize: '0.82rem' }}>🍕 Pizza inclusa</label>
+            </div>
+            <div style={{ gridColumn: '1/-1', marginTop: '6px', padding: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '7px' }}>
+              <label style={{ fontSize: '0.72rem', color: '#6b5a3c', fontFamily: 'Cinzel, serif', display: 'block', marginBottom: '6px' }}>👁 Visibilità</label>
+              <div style={{ display: 'flex', gap: '14px', marginBottom: editData.visible_to_all ? 0 : '8px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text)' }}>
+                  <input type="radio" checked={!!editData.visible_to_all} onChange={() => setEditData(p => ({ ...p, visible_to_all: true }))} style={{ accentColor: '#a9791a' }} />
+                  Tutti
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text)' }}>
+                  <input type="radio" checked={!editData.visible_to_all} onChange={() => setEditData(p => ({ ...p, visible_to_all: false }))} style={{ accentColor: '#a9791a' }} />
+                  Solo gruppi
+                </label>
+              </div>
+              {!editData.visible_to_all && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {groups.map(g => (
+                    <label key={g.id} style={{
+                      display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer',
+                      fontSize: '0.75rem', padding: '3px 8px', borderRadius: '10px',
+                      background: (editData.group_ids || []).includes(g.id) ? 'rgba(169,121,26,0.16)' : 'var(--bg-surface)',
+                      border: `1px solid ${(editData.group_ids || []).includes(g.id) ? '#a9791a' : 'var(--border)'}`,
+                      color: (editData.group_ids || []).includes(g.id) ? '#a9791a' : 'var(--text-muted)',
+                    }}>
+                      <input type="checkbox" checked={(editData.group_ids || []).includes(g.id)} onChange={() => toggleEditGroup(g.id)} style={{ accentColor: '#a9791a' }} />
+                      {g.name}
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -373,6 +429,11 @@ function SessionsSection({ locations }) {
                 </span>
               )}
               {s.has_pizza && <span className="pizza-badge">🍕</span>}
+              {s.visible_to_all === false && (
+                <span style={{ fontSize: '0.7rem', padding: '1px 7px', borderRadius: '10px', background: 'rgba(36,85,164,0.12)', color: '#2455a4' }} title={(s.groups || []).map(g => g.name).join(', ')}>
+                  🔒 {(s.groups || []).map(g => g.name).join(', ') || 'gruppo'}
+                </span>
+              )}
             </div>
             <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b5a3c' }}>
               {fmtDay(s.start_time)} · {fmt(s.start_time)}–{fmt(s.end_time)}
@@ -456,7 +517,7 @@ function SessionsSection({ locations }) {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#6b5a3c', marginBottom: '5px' }}>⚔️ Avventurieri minimi</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#6b5a3c', marginBottom: '5px' }}>⚔️ Avventurieri massimi</label>
               <input type="number" name="required_count" min="1" value={formData.required_count} onChange={handleChange} style={{ ...IS, width: '140px' }} />
             </div>
 
@@ -466,6 +527,46 @@ function SessionsSection({ locations }) {
               <label htmlFor="has_pizza" style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', fontSize: '0.9rem', cursor: 'pointer', userSelect: 'none' }}>
                 🍕 Pizza inclusa in questa sessione
               </label>
+            </div>
+
+            {/* 👁 Visibilità: tutti oppure solo gruppi selezionati */}
+            <div style={{ padding: '12px 14px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#6b5a3c', marginBottom: '8px' }}>👁 Visibilità sessione</label>
+              <div style={{ display: 'flex', gap: '16px', marginBottom: formData.visible_to_all ? 0 : '10px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text)' }}>
+                  <input type="radio" name="visibility" checked={formData.visible_to_all}
+                    onChange={() => setFormData(p => ({ ...p, visible_to_all: true }))}
+                    style={{ accentColor: '#a9791a' }} />
+                  Tutti gli eroi
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text)' }}>
+                  <input type="radio" name="visibility" checked={!formData.visible_to_all}
+                    onChange={() => setFormData(p => ({ ...p, visible_to_all: false }))}
+                    style={{ accentColor: '#a9791a' }} />
+                  Solo gruppi selezionati
+                </label>
+              </div>
+              {!formData.visible_to_all && (
+                groups.length === 0 ? (
+                  <p style={{ fontSize: '0.78rem', color: '#9c8a66', margin: 0 }}>Non hai ancora creato gruppi — vai nella tab "Gruppi" per crearne uno.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {groups.map(g => (
+                      <label key={g.id} style={{
+                        display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer',
+                        fontSize: '0.8rem', padding: '4px 10px', borderRadius: '12px',
+                        background: formData.group_ids.includes(g.id) ? 'rgba(169,121,26,0.16)' : 'var(--bg-card)',
+                        border: `1px solid ${formData.group_ids.includes(g.id) ? '#a9791a' : 'var(--border)'}`,
+                        color: formData.group_ids.includes(g.id) ? '#a9791a' : 'var(--text-muted)',
+                      }}>
+                        <input type="checkbox" checked={formData.group_ids.includes(g.id)} onChange={() => toggleFormGroup(g.id)}
+                          style={{ accentColor: '#a9791a' }} />
+                        {g.name}
+                      </label>
+                    ))}
+                  </div>
+                )
+              )}
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -934,6 +1035,147 @@ function LocationsSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Sezione: Gruppi — creare gruppi e decidere chi vede quali sessioni
+// ═══════════════════════════════════════════════════════════════════════════════
+function GroupsSection() {
+  const [groups, setGroups] = useState([]);
+  const [heroes, setHeroes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [newName, setNewName] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [editingGroup, setEditingGroup] = useState(null);
+  const [memberIds, setMemberIds] = useState([]);
+  const [savingMembers, setSavingMembers] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [gRes, hRes] = await Promise.all([groupsAPI.getGroups(), adminAPI.getUsers()]);
+      setGroups(gRes.data);
+      setHeroes(hRes.data);
+    } catch { alert('Errore nel caricamento gruppi'); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setCreating(true);
+    try {
+      await groupsAPI.createGroup(newName.trim());
+      setNewName('');
+      await load();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Errore nella creazione del gruppo');
+    } finally { setCreating(false); }
+  };
+
+  const handleDelete = async (group) => {
+    if (!confirm(`Eliminare il gruppo "${group.name}"? Le sessioni riservate a questo gruppo diventeranno visibili solo agli altri eventuali gruppi assegnati.`)) return;
+    try { await groupsAPI.deleteGroup(group.id); await load(); }
+    catch (err) { alert(err.response?.data?.error || "Errore nell'eliminazione"); }
+  };
+
+  const openMembers = (group) => {
+    setEditingGroup(group);
+    setMemberIds(group.members.map(m => m.id));
+  };
+
+  const toggleMember = (heroId) => {
+    setMemberIds(prev => prev.includes(heroId) ? prev.filter(id => id !== heroId) : [...prev, heroId]);
+  };
+
+  const saveMembers = async () => {
+    setSavingMembers(true);
+    try {
+      await groupsAPI.setMembers(editingGroup.id, memberIds);
+      setEditingGroup(null);
+      await load();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Errore nel salvataggio membri');
+    } finally { setSavingMembers(false); }
+  };
+
+  const cardSty = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', marginBottom: '16px' };
+  const btnGold = { background: 'linear-gradient(135deg, #a9791a, #c99a2e)', color: '#fffdf6', border: '1px solid #a9791a', borderRadius: '7px', fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '0.82rem', padding: '8px 16px', cursor: 'pointer' };
+  const btnGray = { background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #d9c99e', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem' };
+
+  return (
+    <div>
+      <div style={cardSty}>
+        <h2 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: '0 0 6px', fontSize: '1.05rem' }}>👥 Gruppi</h2>
+        <p style={{ fontSize: '0.78rem', color: '#9c8a66', margin: '0 0 16px' }}>
+          Crea gruppi di eroi (es. "Tavolo Rosso", "Junior") per riservare certe sessioni solo a loro.
+        </p>
+        <form onSubmit={handleCreate} style={{ display: 'flex', gap: '8px', marginBottom: '18px' }}>
+          <input type="text" value={newName} onChange={e => setNewName(e.target.value)}
+            placeholder="Nome nuovo gruppo" style={{ ...IS, flex: 1 }} />
+          <button type="submit" disabled={creating} style={btnGold}>➕ Crea</button>
+        </form>
+
+        {loading ? <p style={{ color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>Caricamento...</p>
+          : groups.length === 0 ? <p style={{ color: '#9c8a66', fontFamily: 'Cinzel, serif' }}>Nessun gruppo ancora creato.</p>
+          : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {groups.map(g => (
+                <div key={g.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-page)', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                  <div>
+                    <span style={{ fontFamily: 'Cinzel, serif', fontWeight: 700, color: '#a9791a', fontSize: '0.92rem' }}>{g.name}</span>
+                    <span style={{ marginLeft: '10px', fontSize: '0.78rem', color: '#9c8a66' }}>
+                      {g.members.length === 0 ? 'nessun membro' : g.members.map(m => m.name).join(', ')}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                    <button onClick={() => openMembers(g)} style={btnGray}>👥 Membri</button>
+                    <button onClick={() => handleDelete(g)} title="Elimina gruppo"
+                      style={{ width: '34px', height: '34px', borderRadius: '7px', background: 'var(--bg-card)', border: '1px solid var(--border)', cursor: 'pointer' }}>🗑️</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        }
+      </div>
+
+      {/* ── Modale gestione membri ── */}
+      {editingGroup && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backgroundColor: 'rgba(44,32,17,0.45)' }}
+          onClick={() => setEditingGroup(null)}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: 'var(--bg-card, #fffdf6)', border: '1px solid var(--border-gold, #a9791a)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(80,60,20,0.25)', width: '100%', maxWidth: '380px', padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}
+          >
+            <h3 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: '0 0 4px', fontSize: '1rem' }}>👥 Membri di "{editingGroup.name}"</h3>
+            <p style={{ fontSize: '0.78rem', color: '#9c8a66', margin: '0 0 14px' }}>Seleziona chi fa parte di questo gruppo.</p>
+            {heroes.length === 0 ? (
+              <p style={{ fontSize: '0.85rem', color: '#9c8a66' }}>Nessun eroe registrato ancora.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
+                {heroes.map(h => (
+                  <label key={h.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text)' }}>
+                    <input type="checkbox" checked={memberIds.includes(h.id)} onChange={() => toggleMember(h.id)} style={{ width: '16px', height: '16px', accentColor: '#a9791a' }} />
+                    {h.name} <span style={{ color: '#9c8a66', fontSize: '0.78rem' }}>({h.email})</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={saveMembers} disabled={savingMembers} style={{ ...btnGold, flex: 1 }}>
+                {savingMembers ? 'Salvataggio...' : '✓ Salva'}
+              </button>
+              <button onClick={() => setEditingGroup(null)} style={btnGray}>Annulla</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // AdminPage principale
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function AdminPage() {
@@ -964,6 +1206,7 @@ export default function AdminPage() {
     { id: 'eroi', label: '🧙 Eroi' },
     { id: 'statistiche', label: '📊 Statistiche' },
     { id: 'locations', label: '📍 Locations' },
+    { id: 'gruppi', label: '👥 Gruppi' },
   ];
 
   return (
@@ -993,6 +1236,7 @@ export default function AdminPage() {
         {tab === 'eroi' && <HeroesSection />}
         {tab === 'statistiche' && <StatsSection />}
         {tab === 'locations' && <LocationsSection />}
+        {tab === 'gruppi' && <GroupsSection />}
       </main>
     </div>
   );
