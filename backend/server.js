@@ -8,6 +8,7 @@ const shiftRoutes = require('./src/routes/shiftRoutes');
 const assignmentRoutes = require('./src/routes/assignmentRoutes');
 const locationRoutes = require('./src/routes/locationRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
+const groupRoutes = require('./src/routes/groupRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,6 +21,7 @@ app.use('/api/shifts', shiftRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/groups', groupRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
