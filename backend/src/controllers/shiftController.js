@@ -41,13 +41,13 @@ const getShifts = async (req, res) => {
     const [shiftsResult, countsResult, usersResult, groupsResult] = await Promise.all([
       pool.query(query, params),
       pool.query(
-        `SELECT shift_id, status, COUNT(*) as count
+        `SELECT shift_id, status, COALESCE(SUM(seats), 0) as total_seats
          FROM assignments
          WHERE status IN ('assigned', 'waiting')
          GROUP BY shift_id, status`
       ),
       pool.query(
-        `SELECT a.shift_id, a.status, u.name
+        `SELECT a.shift_id, a.status, a.seats, u.name
          FROM assignments a
          JOIN users u ON a.user_id = u.id
          WHERE a.status IN ('assigned', 'waiting')
@@ -63,8 +63,8 @@ const getShifts = async (req, res) => {
     const countMap = {};
     const waitingCountMap = {};
     countsResult.rows.forEach(r => {
-      if (r.status === 'assigned') countMap[r.shift_id] = parseInt(r.count);
-      else waitingCountMap[r.shift_id] = parseInt(r.count);
+      if (r.status === 'assigned') countMap[r.shift_id] = parseInt(r.total_seats);
+      else waitingCountMap[r.shift_id] = parseInt(r.total_seats);
     });
 
     const usersMap = {};
@@ -72,7 +72,7 @@ const getShifts = async (req, res) => {
     usersResult.rows.forEach(r => {
       const map = r.status === 'assigned' ? usersMap : waitingUsersMap;
       if (!map[r.shift_id]) map[r.shift_id] = [];
-      map[r.shift_id].push(r.name);
+      map[r.shift_id].push({ name: r.name, seats: r.seats || 1 });
     });
 
     const shiftGroupsMap = {};
