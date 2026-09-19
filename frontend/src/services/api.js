@@ -43,8 +43,8 @@ export const shiftsAPI = {
 
 // Assignments endpoints
 export const assignmentsAPI = {
-  assignShift: (shiftId, hoursVolunteered = null) =>
-    api.post('/assignments', { shift_id: shiftId, hours_volunteered: hoursVolunteered }),
+  assignShift: (shiftId, seats = 1, hoursVolunteered = null) =>
+    api.post('/assignments', { shift_id: shiftId, seats, hours_volunteered: hoursVolunteered }),
   cancelAssignment: (id) =>
     api.delete(`/assignments/${id}`),
   getUserAssignments: () =>
