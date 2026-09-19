@@ -111,6 +111,11 @@ async function initializeDatabase() {
       );
     `);
 
+    // Migration: posti multipli per iscrizione (es. "prenoto per me + 1 amico")
+    await client.query(`
+      ALTER TABLE assignments ADD COLUMN IF NOT EXISTS seats INTEGER DEFAULT 1;
+    `);
+
     console.log('✅ Database initialized');
   } catch (err) {
     console.error('Error initializing database:', err);
