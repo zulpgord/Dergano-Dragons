@@ -339,6 +339,28 @@ button.border-indigo-600 { color: var(--gold) !important; }
   100%    { opacity: 0; }
 }
 
+/* ── Immagini decorative ai lati del calendario ── */
+.calendar-with-art {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+}
+.calendar-side-art-wrap {
+  flex-shrink: 0;
+  display: flex;
+}
+.calendar-side-art {
+  height: 100%;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+}
+@media (max-width: 1150px) {
+  .calendar-side-art-wrap { display: none; }
+}
+
 /* ── Barra di riempimento (progress fill) ── */
 .fill-track {
   width: 100%;
