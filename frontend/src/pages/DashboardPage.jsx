@@ -22,14 +22,18 @@ function DerganoHeader() {
   );
 }
 
-// ── Overlay: il drago manda un bacio quando ci si unisce a una sessione ────
-function KissOverlay({ show }) {
+// ── Overlay: il drago manda un bacio (o avvisa della lista d'attesa) ───────
+function KissOverlay({ show, waiting }) {
   if (!show) return null;
   return (
     <div className="kiss-overlay">
       <div className="kiss-overlay-inner">
         <img src="/drago.png" alt="" className="kiss-dragon" />
-        <span className="kiss-emoji">💋</span>
+        {waiting ? (
+          <span className="kiss-waiting-bubble">⏳ Sei in lista d'attesa!</span>
+        ) : (
+          <span className="kiss-emoji">💋</span>
+        )}
       </div>
     </div>
   );
@@ -63,6 +67,7 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
   const assignedUsers = session.assigned_users || [];
   const waitingUsers = session.waiting_users || [];
   const [isBooking, setIsBooking] = useState(false);
+  const [seatsWanted, setSeatsWanted] = useState(1);
 
   const statusLabel = session.cancelled ? 'Annullata'
     : isAssigned ? '✓ Sei registrato'
@@ -154,7 +159,7 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
               Avventurieri
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {assignedUsers.map((name, i) => (
+              {assignedUsers.map((u, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text, #2c2011)' }}>
                   <span style={{
                     width: '22px', height: '22px', borderRadius: '50%',
@@ -162,9 +167,9 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
                     color: '#a9791a', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
                   }}>
-                    {name.charAt(0).toUpperCase()}
+                    {u.name.charAt(0).toUpperCase()}
                   </span>
-                  {name}
+                  {u.name}{u.seats > 1 && <span style={{ color: '#9c8a66', fontSize: '0.78rem' }}> (+{u.seats - 1}, {u.seats} posti)</span>}
                 </div>
               ))}
             </div>
@@ -177,7 +182,7 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
               ⏳ Lista d'attesa
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {waitingUsers.map((name, i) => (
+              {waitingUsers.map((u, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-muted, #6b5a3c)' }}>
                   <span style={{
                     width: '22px', height: '22px', borderRadius: '50%',
@@ -187,7 +192,7 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
                   }}>
                     {i + 1}
                   </span>
-                  {name}
+                  {u.name}{u.seats > 1 && <span style={{ fontSize: '0.78rem' }}> ({u.seats} posti)</span>}
                 </div>
               ))}
             </div>
@@ -217,9 +222,19 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontFamily: 'Cinzel, serif', fontSize: '0.8rem', color: '#6b5a3c' }}>Posti da prenotare:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <button type="button" onClick={() => setSeatsWanted(s => Math.max(1, s - 1))}
+                  style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: '#a9791a', fontWeight: 700, cursor: 'pointer' }}>−</button>
+                <span style={{ minWidth: '20px', textAlign: 'center', fontWeight: 700, color: 'var(--text)' }}>{seatsWanted}</span>
+                <button type="button" onClick={() => setSeatsWanted(s => Math.min(6, s + 1))}
+                  style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: '#a9791a', fontWeight: 700, cursor: 'pointer' }}>+</button>
+              </div>
+            </div>
             <button
               className="dado-join-btn"
-              onClick={async () => { setIsBooking(true); try { await onAssign(session.id); onClose(); } catch(e) { setIsBooking(false); } }}
+              onClick={async () => { setIsBooking(true); try { await onAssign(session.id, seatsWanted); onClose(); } catch(e) { setIsBooking(false); } }}
               disabled={isBooking}
               style={{ width: '78px', height: '78px' }}
               title={fullyC ? "Iscriviti in lista d'attesa" : "Unisciti all'avventura"}
@@ -252,6 +267,7 @@ export default function DashboardPage() {
   const [selectedSession, setSelectedSession] = useState(null);
   const [toast, setToast] = useState(null);
   const [showKiss, setShowKiss] = useState(false);
+  const [kissWaiting, setKissWaiting] = useState(false);
   const [bookingSessionId, setBookingSessionId] = useState(null);
   const [calMonth, setCalMonth] = useState(() => {
     const now = new Date();
@@ -300,11 +316,12 @@ export default function DashboardPage() {
     setTimeout(() => setToast(null), duration);
   };
 
-  const handleAssign = async (sessionId) => {
+  const handleAssign = async (sessionId, seats = 1) => {
     try {
-      const res = await assignmentsAPI.assignShift(sessionId);
+      const res = await assignmentsAPI.assignShift(sessionId, seats);
       const isWaiting = res.data?.assignment?.status === 'waiting';
       showToast(isWaiting ? '⏳ Sessione al completo — sei in lista d\'attesa' : '⚔️ Sei nell\'avventura!');
+      setKissWaiting(isWaiting);
       setShowKiss(true);
       setTimeout(() => setShowKiss(false), 1900);
       await loadSessions(true);
@@ -366,7 +383,7 @@ export default function DashboardPage() {
         onCancel={handleCancel}
       />
 
-      <KissOverlay show={showKiss} />
+      <KissOverlay show={showKiss} waiting={kissWaiting} />
 
       {toast && (
         <div style={{
@@ -616,12 +633,12 @@ export default function DashboardPage() {
                               )}
                               {assignedUsers.length > 0 && !s.cancelled && (
                                 <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#9c8a66' }}>
-                                  ⚔️ {assignedUsers.join(', ')}
+                                  ⚔️ {assignedUsers.map(u => u.seats > 1 ? `${u.name} (${u.seats})` : u.name).join(', ')}
                                 </p>
                               )}
                               {waitingUsers.length > 0 && !s.cancelled && (
                                 <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#8a651b' }}>
-                                  ⏳ Attesa: {waitingUsers.join(', ')}
+                                  ⏳ Attesa: {waitingUsers.map(u => u.seats > 1 ? `${u.name} (${u.seats})` : u.name).join(', ')}
                                 </p>
                               )}
                             </div>
