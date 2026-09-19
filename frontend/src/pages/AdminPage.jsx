@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { shiftsAPI, locationsAPI, adminAPI } from '../services/api';
+import { shiftsAPI, locationsAPI, adminAPI, authAPI } from '../services/api';
 
 function getWeekStart(date) {
   const d = new Date(date);
@@ -36,6 +36,99 @@ function FillBar({ current, total, height = 7 }) {
   );
 }
 
+// ── Modale dettaglio sessione: lista iscritti + lista d'attesa ─────────────
+function SessionDetailModal({ session, onClose }) {
+  if (!session) return null;
+  const fmt = dt => new Date(dt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  const fmtDate = dt => new Date(dt).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const assignedUsers = session.assigned_users || [];
+  const waitingUsers = session.waiting_users || [];
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 60,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '16px', backgroundColor: 'rgba(44,32,17,0.45)',
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: 'var(--bg-card, #fffdf6)', border: '1px solid var(--border-gold, #a9791a)',
+          borderRadius: '12px', boxShadow: '0 8px 32px rgba(80,60,20,0.25)',
+          width: '100%', maxWidth: '400px', padding: '1.5rem', maxHeight: '85vh', overflowY: 'auto',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+          <div>
+            <h2 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: 0, fontSize: '1.1rem' }}>
+              {session.location_name}
+            </h2>
+            {session.has_pizza && (
+              <span className="pizza-badge" style={{ marginTop: '4px', display: 'inline-flex' }}>🍕 Pizza inclusa</span>
+            )}
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#9c8a66', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1 }}>×</button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px', color: 'var(--text-muted, #6b5a3c)' }}>
+          <div style={{ fontSize: '0.9rem', textTransform: 'capitalize' }}>📅 {fmtDate(session.start_time)}</div>
+          <div style={{ fontSize: '0.9rem' }}>🕐 {fmt(session.start_time)} — {fmt(session.end_time)}</div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)' }}>
+            ⚔️ {session.assigned_count} / {session.required_count} avventurieri
+            {session.cancelled && <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: '#8a651b', fontWeight: 700 }}>⚠ Annullata</span>}
+          </div>
+          <FillBar current={session.assigned_count} total={session.required_count} height={8} />
+        </div>
+
+        <p style={{ fontSize: '0.72rem', color: '#9c8a66', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Cinzel, serif' }}>
+          Avventurieri iscritti ({assignedUsers.length})
+        </p>
+        {assignedUsers.length === 0 ? (
+          <p style={{ fontSize: '0.85rem', color: '#9c8a66', marginBottom: '18px' }}>Nessuno iscritto ancora.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '18px' }}>
+            {assignedUsers.map((name, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text, #2c2011)' }}>
+                <span style={{
+                  width: '22px', height: '22px', borderRadius: '50%',
+                  background: 'rgba(169,121,26,0.14)', border: '1px solid rgba(169,121,26,0.3)',
+                  color: '#a9791a', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
+                }}>{name.charAt(0).toUpperCase()}</span>
+                {name}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p style={{ fontSize: '0.72rem', color: '#8a651b', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Cinzel, serif' }}>
+          ⏳ Lista d'attesa ({waitingUsers.length})
+        </p>
+        {waitingUsers.length === 0 ? (
+          <p style={{ fontSize: '0.85rem', color: '#9c8a66' }}>Nessuno in lista d'attesa.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {waitingUsers.map((name, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-muted, #6b5a3c)' }}>
+                <span style={{
+                  width: '22px', height: '22px', borderRadius: '50%',
+                  background: 'rgba(169,121,26,0.10)', border: '1px dashed rgba(169,121,26,0.4)',
+                  color: '#8a651b', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.72rem', fontWeight: 700, flexShrink: 0,
+                }}>{i + 1}</span>
+                {name}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // Sezione: Sessioni (con vista Settimana / Mese)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -64,6 +157,7 @@ function SessionsSection({ locations }) {
   const [editingSession, setEditingSession] = useState(null);
   const [editData, setEditData] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
+  const [detailSession, setDetailSession] = useState(null);
 
   useEffect(() => {
     if (locations.length > 0 && !formData.location_id) {
@@ -249,13 +343,21 @@ function SessionsSection({ locations }) {
       );
     }
 
+    const waitingCount = s.waiting_count || 0;
+
     return (
-      <div key={s.id} style={{
-        border: '1px solid var(--border)',
-        background: isCancelled ? 'rgba(169,121,26,0.06)' : 'var(--bg-page)',
-        borderRadius: '8px', padding: '10px 12px',
-        opacity: isCancelled ? 0.75 : 1,
-      }}>
+      <div
+        key={s.id}
+        onClick={() => setDetailSession(s)}
+        title="Clicca per vedere gli iscritti"
+        style={{
+          border: '1px solid var(--border)',
+          background: isCancelled ? 'rgba(169,121,26,0.06)' : 'var(--bg-page)',
+          borderRadius: '8px', padding: '10px 12px',
+          opacity: isCancelled ? 0.75 : 1,
+          cursor: 'pointer',
+        }}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px', flexWrap: 'wrap' }}>
@@ -265,6 +367,11 @@ function SessionsSection({ locations }) {
               <span style={{ fontSize: '0.7rem', padding: '1px 7px', borderRadius: '10px', background: 'rgba(169,121,26,0.10)', color: '#6b5a3c' }}>
                 {isCancelled ? 'Annullata' : s.assigned_count === 0 ? 'Nessun avventuriero' : `${s.assigned_count}/${s.required_count} ✓`}
               </span>
+              {waitingCount > 0 && !isCancelled && (
+                <span style={{ fontSize: '0.7rem', padding: '1px 7px', borderRadius: '10px', background: 'rgba(169,121,26,0.14)', color: '#8a651b' }}>
+                  ⏳ {waitingCount} in attesa
+                </span>
+              )}
               {s.has_pizza && <span className="pizza-badge">🍕</span>}
             </div>
             <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b5a3c' }}>
@@ -279,7 +386,7 @@ function SessionsSection({ locations }) {
               <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: '#9c8a66' }}>⚔️ {s.assigned_users.join(', ')}</p>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '4px', marginLeft: '8px', flexShrink: 0 }}>
+          <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: '4px', marginLeft: '8px', flexShrink: 0 }}>
             {!isCancelled && (
               <button onClick={() => startEditSession(s)} title="Modifica"
                 style={{ width: '30px', height: '30px', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: '0.85rem' }}>✏️</button>
@@ -296,8 +403,25 @@ function SessionsSection({ locations }) {
     );
   };
 
+  // ── KPI sul periodo visualizzato (settimana o mese) ─────────────────────
+  const activeVisible = visibleSessions.filter(s => !s.cancelled);
+  const kpiSessionCount = activeVisible.length;
+  const kpiFillPercent = activeVisible.length > 0
+    ? Math.round(
+        activeVisible.reduce((sum, s) => sum + Math.min(1, s.assigned_count / (s.required_count || 1)), 0)
+        / activeVisible.length * 100
+      )
+    : 0;
+  const kpiColor = kpiFillPercent >= 80
+    ? { bg: 'rgba(47,125,58,0.12)', text: '#206a2a', border: 'rgba(47,125,58,0.3)' }
+    : kpiFillPercent >= 50
+    ? { bg: 'rgba(169,121,26,0.12)', text: '#8a651b', border: 'rgba(169,121,26,0.3)' }
+    : { bg: 'rgba(179,38,30,0.10)', text: '#a3261e', border: 'rgba(179,38,30,0.25)' };
+
   return (
     <div>
+      <SessionDetailModal session={detailSession} onClose={() => setDetailSession(null)} />
+
       {/* ── Crea sessione ── */}
       <div style={cardSty}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -361,6 +485,20 @@ function SessionsSection({ locations }) {
             </button>
           </form>
         )}
+      </div>
+
+      {/* ── KPI del periodo ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+        <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+          <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>
+            Sessioni {rangeMode === 'settimana' ? 'della settimana' : 'del mese'}
+          </p>
+          <p style={{ margin: '4px 0 0', fontSize: '1.8rem', fontWeight: 900, color: '#a9791a', fontFamily: 'Cinzel, serif' }}>{kpiSessionCount}</p>
+        </div>
+        <div style={{ padding: '14px', borderRadius: '10px', background: kpiColor.bg, border: `1px solid ${kpiColor.border}` }}>
+          <p style={{ margin: 0, fontSize: '0.78rem', color: kpiColor.text, fontFamily: 'Cinzel, serif' }}>% riempimento medio</p>
+          <p style={{ margin: '4px 0 0', fontSize: '1.8rem', fontWeight: 900, color: kpiColor.text, fontFamily: 'Cinzel, serif' }}>{kpiFillPercent}%</p>
+        </div>
       </div>
 
       {/* ── Lista sessioni: settimana o mese ── */}
@@ -434,6 +572,11 @@ function HeroesSection() {
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
   const [heroes, setHeroes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [resetHero, setResetHero] = useState(null);
+  const [newPwd, setNewPwd] = useState('');
+  const [showPwd, setShowPwd] = useState(false);
+  const [savingPwd, setSavingPwd] = useState(false);
+  const [pwdDone, setPwdDone] = useState(false);
 
   const load = useCallback(async () => {
     try { const res = await adminAPI.getUsers(); setHeroes(res.data); }
@@ -451,15 +594,47 @@ function HeroesSection() {
     } catch (err) { alert(err.response?.data?.error || 'Errore nel cambio ruolo'); }
   };
 
+  const openReset = (hero) => { setResetHero(hero); setNewPwd(''); setShowPwd(false); setPwdDone(false); };
+  const closeReset = () => { setResetHero(null); setNewPwd(''); setPwdDone(false); };
+
+  const generateRandomPwd = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    let pwd = '';
+    for (let i = 0; i < 10; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+    setNewPwd(pwd);
+    setShowPwd(true);
+  };
+
+  const handleResetPwd = async (e) => {
+    e.preventDefault();
+    if (newPwd.length < 6) { alert('La password deve essere di almeno 6 caratteri'); return; }
+    setSavingPwd(true);
+    try {
+      await authAPI.resetPassword(resetHero.email, newPwd);
+      setPwdDone(true);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Errore nel reset della password');
+    } finally { setSavingPwd(false); }
+  };
+
+  const inputSty = {
+    width: '100%', padding: '9px 12px', backgroundColor: 'var(--bg-surface, #ece2c8)',
+    border: '1px solid var(--border, #d9c99e)', borderRadius: '7px', color: 'var(--text, #2c2011)',
+    fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box',
+  };
+
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px' }}>
-      <h2 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: '0 0 16px', fontSize: '1.05rem' }}>🧙 Eroi registrati</h2>
+      <h2 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: '0 0 6px', fontSize: '1.05rem' }}>🧙 Eroi registrati</h2>
+      <p style={{ fontSize: '0.78rem', color: '#9c8a66', margin: '0 0 16px' }}>
+        Promuovi un eroe ad admin con "→ Admin", oppure reimposta la sua password con 🔑.
+      </p>
       {loading ? <p style={{ color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>Caricamento...</p> : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: '0.88rem', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Nome', 'Email', 'Ruolo', 'Azione'].map(h => (
+                {['Nome', 'Email', 'Ruolo', 'Azioni'].map(h => (
                   <th key={h} style={{ paddingBottom: '8px', paddingRight: '16px', textAlign: 'left', color: '#6b5a3c', fontFamily: 'Cinzel, serif', fontSize: '0.72rem', letterSpacing: '1px' }}>{h}</th>
                 ))}
               </tr>
@@ -478,18 +653,85 @@ function HeroesSection() {
                       {u.role === 'admin' ? '🛡️ Admin' : '⚔️ Avventuriero'}
                     </span>
                   </td>
-                  <td style={{ padding: '10px 0' }}>
+                  <td style={{ padding: '10px 0', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                     {u.id !== currentUser.id ? (
                       <button onClick={() => toggleRole(u)}
                         style={{ background: 'none', border: 'none', color: '#a9791a', cursor: 'pointer', fontSize: '0.82rem', textDecoration: 'underline', fontFamily: 'Cinzel, serif' }}>
                         {u.role === 'admin' ? '→ Avventuriero' : '→ Admin'}
                       </button>
                     ) : <span style={{ fontSize: '0.78rem', color: '#9c8a66' }}>Tu</span>}
+                    <button onClick={() => openReset(u)} title="Reimposta password"
+                      style={{ background: 'none', border: 'none', color: '#6b5a3c', cursor: 'pointer', fontSize: '0.92rem' }}>
+                      🔑
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* ── Modale reset password ── */}
+      {resetHero && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backgroundColor: 'rgba(44,32,17,0.45)' }}
+          onClick={closeReset}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: 'var(--bg-card, #fffdf6)', border: '1px solid var(--border-gold, #a9791a)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(80,60,20,0.25)', width: '100%', maxWidth: '360px', padding: '1.5rem' }}
+          >
+            <h3 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: '0 0 4px', fontSize: '1rem' }}>🔑 Reimposta password</h3>
+            <p style={{ fontSize: '0.82rem', color: '#6b5a3c', margin: '0 0 16px' }}>Per <strong>{resetHero.name}</strong> ({resetHero.email})</p>
+
+            {pwdDone ? (
+              <div>
+                <div style={{ background: 'rgba(47,125,58,0.10)', border: '1px solid rgba(47,125,58,0.3)', borderRadius: '8px', padding: '12px', marginBottom: '14px' }}>
+                  <p style={{ margin: '0 0 8px', fontSize: '0.85rem', color: '#206a2a', fontWeight: 600 }}>✓ Password reimpostata</p>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#6b5a3c' }}>Comunicala a {resetHero.name}:</p>
+                  <p style={{ margin: '6px 0 0', fontFamily: 'monospace', fontSize: '1rem', background: 'var(--bg-surface)', padding: '8px 10px', borderRadius: '6px', color: 'var(--text)', letterSpacing: '1px' }}>
+                    {newPwd}
+                  </p>
+                </div>
+                <button onClick={closeReset} style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg, #a9791a, #c99a2e)', color: '#fffdf6', border: '1px solid #a9791a', borderRadius: '8px', fontFamily: 'Cinzel, serif', fontWeight: 700, cursor: 'pointer' }}>
+                  Chiudi
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleResetPwd} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showPwd ? 'text' : 'password'}
+                    value={newPwd}
+                    onChange={e => setNewPwd(e.target.value)}
+                    placeholder="Nuova password (min 6 caratteri)"
+                    minLength={6}
+                    required
+                    style={{ ...inputSty, paddingRight: '38px' }}
+                  />
+                  <button type="button" onClick={() => setShowPwd(!showPwd)}
+                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.95rem' }}>
+                    {showPwd ? '🙈' : '👁'}
+                  </button>
+                </div>
+                <button type="button" onClick={generateRandomPwd}
+                  style={{ background: 'none', border: 'none', color: '#a9791a', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', textAlign: 'left', padding: 0 }}>
+                  🎲 Genera password casuale
+                </button>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                  <button type="submit" disabled={savingPwd}
+                    style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #a9791a, #c99a2e)', color: '#fffdf6', border: '1px solid #a9791a', borderRadius: '8px', fontFamily: 'Cinzel, serif', fontWeight: 700, cursor: 'pointer', opacity: savingPwd ? 0.6 : 1 }}>
+                    {savingPwd ? 'Salvataggio...' : 'Reimposta'}
+                  </button>
+                  <button type="button" onClick={closeReset}
+                    style={{ padding: '10px 16px', background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #d9c99e', borderRadius: '8px', cursor: 'pointer' }}>
+                    Annulla
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       )}
     </div>
