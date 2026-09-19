@@ -3,49 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 
 // ══════════════════════════════════════════════════════
-// Logo Auth: drago grande al centro, dado SX, testo
+// Logo Auth: solo il drago (contiene già dado e titolo)
 // ══════════════════════════════════════════════════════
 function DerganoLogo() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0', marginBottom: '4px' }}>
-
-      {/* Layout a 3 colonne: dado | drago | spazio */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0', width: '100%', justifyContent: 'center' }}>
-
-        {/* DADO — logo testuale verticale a sinistra */}
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingBottom: '8px' }}>
-          <img
-            src="/dado.png"
-            alt="Dergano & Dragons logo"
-            style={{
-              height: '110px',
-              width: 'auto',
-              objectFit: 'contain',
-              /* bianco su sfondo scuro — già trasparente, artwork chiaro */
-              filter: 'drop-shadow(0 0 10px rgba(201,162,39,0.35)) brightness(1.05)',
-            }}
-          />
-        </div>
-
-        {/* DRAGO — grande al centro/destra */}
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'flex-end' }}>
-          <img
-            src="/drago.png"
-            alt="Drago Dergano & Dragons"
-            style={{
-              height: '190px',
-              width: 'auto',
-              objectFit: 'contain',
-              /* drago ha outlines nere — perfetto così su sfondo chiaro */
-              filter: 'drop-shadow(0 0 6px rgba(169,121,26,0.15))',
-            }}
-          />
-        </div>
-
-      </div>
-
+      <img
+        src="/drago.png"
+        alt="Dergano & Dragons"
+        style={{
+          width: 'min(80vw, 280px)',
+          height: 'auto',
+          objectFit: 'contain',
+          filter: 'drop-shadow(0 0 6px rgba(169,121,26,0.15))',
+        }}
+      />
       {/* Separatore ornamentale */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '380px', marginTop: '2px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '320px', marginTop: '4px' }}>
         <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #a9791a, transparent)' }} />
         <span style={{ color: '#a9791a', fontSize: '0.7rem' }}>✦</span>
         <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #a9791a, transparent)' }} />

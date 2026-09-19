@@ -312,7 +312,7 @@ function SessionsSection({ locations }) {
       return (
         <div key={s.id} style={{ border: '1px solid rgba(169,121,26,0.4)', background: 'rgba(169,121,26,0.05)', borderRadius: '8px', padding: '12px' }}>
           <p style={{ fontSize: '0.75rem', fontFamily: 'Cinzel, serif', color: '#a9791a', marginBottom: '10px' }}>✏️ Modifica sessione</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+          <div className="form-grid-2" style={{ marginBottom: '8px' }}>
             <div style={{ gridColumn: '1/-1' }}>
               <label style={{ fontSize: '0.72rem', color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>Location</label>
               <select name="location_id" value={editData.location_id} onChange={handleEditChange} style={{ ...IS, padding: '6px 10px', fontSize: '0.85rem', marginTop: '3px' }}>
@@ -440,7 +440,7 @@ function SessionsSection({ locations }) {
               </select>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            <div className="form-grid-3">
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Cinzel, serif', color: '#6b5a3c', marginBottom: '5px' }}>📅 Data</label>
                 <input type="date" name="date" value={formData.date} onChange={handleChange} required style={IS} />
@@ -488,7 +488,7 @@ function SessionsSection({ locations }) {
       </div>
 
       {/* ── KPI del periodo ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+      <div className="kpi-grid-2" style={{ marginBottom: '16px' }}>
         <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>
             Sessioni {rangeMode === 'settimana' ? 'della settimana' : 'del mese'}
@@ -801,7 +801,7 @@ function StatsSection() {
           {shiftStats && (
             <div style={cardSty}>
               <h3 style={{ fontFamily: 'Cinzel, serif', color: '#6b5a3c', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>📋 Riepilogo sessioni nel periodo</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+              <div className="form-grid-3">
                 {[
                   { label: 'Sessioni totali', val: shiftStats.total_shifts, color: '#2c2011', bg: 'rgba(217,201,158,0.3)' },
                   { label: 'Sessioni attive', val: shiftStats.active_shifts, color: '#206a2a', bg: 'rgba(47,125,58,0.12)' },

@@ -2,30 +2,34 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { shiftsAPI, assignmentsAPI } from '../services/api';
 
-// ── Header logo fantasy: dado SX + drago DX (tema chiaro) ───────────────────
+// ── Header logo fantasy: solo drago (contiene già dado e titolo) ───────────
 function DerganoHeader() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', height: '54px' }}>
-      <img
-        src="/dado.png"
-        alt="Dergano & Dragons"
-        style={{
-          height: '52px', width: 'auto', objectFit: 'contain',
-          filter: 'invert(1) brightness(0.35) sepia(0.4) saturate(1.5) hue-rotate(-10deg)',
-        }}
-      />
-      <div style={{ width: '1px', height: '32px', background: '#d9c99e', margin: '0 6px', flexShrink: 0 }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '54px' }}>
       <img
         src="/drago.png"
-        alt="Drago"
+        alt="Dergano & Dragons"
         style={{ height: '54px', width: 'auto', objectFit: 'contain' }}
       />
-      <div style={{
+      <div className="dg-header-sep" style={{ width: '1px', height: '32px', background: '#d9c99e', flexShrink: 0 }} />
+      <div className="dg-subtitle" style={{
         fontFamily: 'Cinzel, serif', fontSize: '0.55rem', color: '#6b5a3c',
-        letterSpacing: '3px', paddingLeft: '8px', lineHeight: 1.4,
-        borderLeft: '1px solid #d9c99e', marginLeft: '4px',
+        letterSpacing: '3px', lineHeight: 1.4,
       }}>
         SESSION<br/>MANAGER
+      </div>
+    </div>
+  );
+}
+
+// ── Overlay: il drago manda un bacio quando ci si unisce a una sessione ────
+function KissOverlay({ show }) {
+  if (!show) return null;
+  return (
+    <div className="kiss-overlay">
+      <div className="kiss-overlay-inner">
+        <img src="/drago.png" alt="" className="kiss-dragon" />
+        <span className="kiss-emoji">💋</span>
       </div>
     </div>
   );
@@ -212,20 +216,20 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
             </button>
           </div>
         ) : (
-          <button
-            onClick={async () => { setIsBooking(true); try { await onAssign(session.id); onClose(); } catch(e) { setIsBooking(false); } }}
-            disabled={isBooking}
-            style={{
-              width: '100%', padding: '11px',
-              background: isBooking ? 'rgba(169,121,26,0.3)' : 'linear-gradient(135deg, #a9791a, #c99a2e)',
-              color: '#fffdf6', border: '1px solid #a9791a', borderRadius: '8px',
-              fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '0.9rem',
-              letterSpacing: '0.5px', cursor: isBooking ? 'not-allowed' : 'pointer',
-              boxShadow: isBooking ? 'none' : '0 2px 10px rgba(169,121,26,0.25)',
-            }}
-          >
-            {isBooking ? '⏳ Registrazione...' : fullyC ? '⏳ Iscriviti in lista d\'attesa' : '⚔️ Unisciti all\'avventura'}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+            <button
+              className="dado-join-btn"
+              onClick={async () => { setIsBooking(true); try { await onAssign(session.id); onClose(); } catch(e) { setIsBooking(false); } }}
+              disabled={isBooking}
+              style={{ width: '78px', height: '78px' }}
+              title={fullyC ? "Iscriviti in lista d'attesa" : "Unisciti all'avventura"}
+            >
+              <img src="/dado.png" alt="" />
+            </button>
+            <span style={{ fontFamily: 'Cinzel, serif', fontSize: '0.85rem', fontWeight: 700, color: '#a9791a', textAlign: 'center' }}>
+              {isBooking ? '⏳ Registrazione...' : fullyC ? 'Iscriviti in lista d\'attesa' : 'Unisciti all\'avventura'}
+            </span>
+          </div>
         )}
       </div>
     </div>
@@ -247,6 +251,7 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState('calendario');
   const [selectedSession, setSelectedSession] = useState(null);
   const [toast, setToast] = useState(null);
+  const [showKiss, setShowKiss] = useState(false);
   const [bookingSessionId, setBookingSessionId] = useState(null);
   const [calMonth, setCalMonth] = useState(() => {
     const now = new Date();
@@ -284,6 +289,8 @@ export default function DashboardPage() {
       const res = await assignmentsAPI.assignShift(sessionId);
       const isWaiting = res.data?.assignment?.status === 'waiting';
       showToast(isWaiting ? '⏳ Sessione al completo — sei in lista d\'attesa' : '⚔️ Sei nell\'avventura!');
+      setShowKiss(true);
+      setTimeout(() => setShowKiss(false), 1900);
       await loadSessions(true);
     } catch (err) {
       showToast('❌ ' + (err.response?.data?.error || 'Errore nella registrazione'));
@@ -342,6 +349,8 @@ export default function DashboardPage() {
         onAssign={handleAssign}
         onCancel={handleCancel}
       />
+
+      <KissOverlay show={showKiss} />
 
       {toast && (
         <div style={{
@@ -478,10 +487,10 @@ export default function DashboardPage() {
                                       border: isMySession ? '1.5px solid #2455a4' : isMyWaiting ? '1.5px dashed #a9791a' : '1px solid var(--border)',
                                     }}
                                   >
-                                    <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
+                                    <div className="calendar-cell-text" style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
                                       {s.cancelled && '⚠ '}{isMyWaiting && '⏳ '}{s.has_pizza && '🍕 '}{s.location_name}
                                     </div>
-                                    <div style={{ opacity: 0.7, color: 'var(--text-muted)' }}>{fmt(s.start_time)}–{fmt(s.end_time)}</div>
+                                    <div className="calendar-cell-text" style={{ opacity: 0.7, color: 'var(--text-muted)' }}>{fmt(s.start_time)}–{fmt(s.end_time)}</div>
                                     {!s.cancelled && (
                                       <div style={{ marginTop: '2px' }}>
                                         <FillBar current={s.assigned_count} total={s.required_count} height={4} />
@@ -586,24 +595,33 @@ export default function DashboardPage() {
                               )}
                             </div>
                             {!s.cancelled && (
-                              <button
-                                onClick={async () => {
-                                  if (isMySession || isMyWaiting) { handleCancel(myAssignment?.id); }
-                                  else {
-                                    setBookingSessionId(s.id);
-                                    try { await handleAssign(s.id); } catch(e) {} finally { setBookingSessionId(null); }
-                                  }
-                                }}
-                                disabled={bookingSessionId === s.id}
-                                style={{
-                                  marginLeft: '12px', padding: '8px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0, fontFamily: 'Cinzel, serif',
-                                  background: (isMySession || isMyWaiting) ? 'rgba(169,121,26,0.10)' : bookingSessionId === s.id ? 'rgba(169,121,26,0.2)' : 'linear-gradient(135deg, #a9791a, #c99a2e)',
-                                  color: (isMySession || isMyWaiting) ? '#6b5a3c' : '#fffdf6',
-                                  border: (isMySession || isMyWaiting) ? '1px solid #d9c99e' : '1px solid #a9791a',
-                                }}
-                              >
-                                {isMySession ? '✓ Iscritto' : isMyWaiting ? '⏳ In attesa' : bookingSessionId === s.id ? '⏳' : fullyC ? '⏳ Lista d\'attesa' : '⚔️ Partecipa'}
-                              </button>
+                              (isMySession || isMyWaiting) ? (
+                                <button
+                                  onClick={() => handleCancel(myAssignment?.id)}
+                                  style={{
+                                    marginLeft: '12px', padding: '8px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0, fontFamily: 'Cinzel, serif',
+                                    background: 'rgba(169,121,26,0.10)', color: '#6b5a3c', border: '1px solid #d9c99e',
+                                  }}
+                                >
+                                  {isMySession ? '✓ Iscritto' : '⏳ In attesa'}
+                                </button>
+                              ) : (
+                                <div style={{ marginLeft: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+                                  <button
+                                    className="dado-join-btn"
+                                    onClick={async () => {
+                                      setBookingSessionId(s.id);
+                                      try { await handleAssign(s.id); } catch(e) {} finally { setBookingSessionId(null); }
+                                    }}
+                                    disabled={bookingSessionId === s.id}
+                                    style={{ width: '40px', height: '40px' }}
+                                    title={fullyC ? "Iscriviti in lista d'attesa" : 'Unisciti alla sessione'}
+                                  >
+                                    <img src="/dado.png" alt="Partecipa" />
+                                  </button>
+                                  {bookingSessionId === s.id && <span style={{ fontSize: '0.65rem', color: '#9c8a66' }}>⏳</span>}
+                                </div>
+                              )
                             )}
                           </div>
                         </div>
