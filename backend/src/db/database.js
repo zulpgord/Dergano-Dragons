@@ -88,6 +88,29 @@ async function initializeDatabase() {
       ALTER TABLE shifts ADD COLUMN IF NOT EXISTS has_pizza BOOLEAN DEFAULT false;
     `);
 
+    // Migration: gruppi eroi e visibilità selettiva delle sessioni
+    await client.query(`
+      ALTER TABLE shifts ADD COLUMN IF NOT EXISTS visible_to_all BOOLEAN DEFAULT true;
+
+      CREATE TABLE IF NOT EXISTS groups (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS user_groups (
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
+        PRIMARY KEY (user_id, group_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS shift_groups (
+        shift_id INTEGER REFERENCES shifts(id) ON DELETE CASCADE,
+        group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
+        PRIMARY KEY (shift_id, group_id)
+      );
+    `);
+
     console.log('✅ Database initialized');
   } catch (err) {
     console.error('Error initializing database:', err);
