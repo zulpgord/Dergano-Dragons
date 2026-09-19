@@ -252,6 +252,93 @@ button.border-indigo-600 { color: var(--gold) !important; }
   letter-spacing: 2px;
 }
 
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — adattamento a schermi piccoli / mobile
+   ══════════════════════════════════════════════════════════ */
+.form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.kpi-grid-2  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+@media (max-width: 640px) {
+  .form-grid-3 { grid-template-columns: 1fr; }
+  .form-grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+  .kpi-grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .dg-subtitle { display: none; }
+  .calendar-cell-text { font-size: 0.6rem !important; }
+}
+@media (max-width: 380px) {
+  .dg-header-sep { display: none; }
+}
+
+/* ── Pulsante-dado per unirsi a una sessione ── */
+.dado-join-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: transform 0.15s ease, filter 0.15s ease;
+  filter: drop-shadow(0 2px 6px rgba(169,121,26,0.35));
+}
+.dado-join-btn:hover:not(:disabled) { transform: scale(1.08) rotate(-4deg); }
+.dado-join-btn:active:not(:disabled) { transform: scale(0.95); }
+.dado-join-btn:disabled { cursor: not-allowed; opacity: 0.6; }
+.dado-join-btn img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+
+/* ── Overlay del drago che manda un bacio ── */
+.kiss-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: rgba(44,32,17,0.12);
+  animation: kissOverlayFade 1.9s ease forwards;
+}
+.kiss-overlay-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kiss-dragon {
+  width: min(62vw, 300px);
+  height: auto;
+  animation: kissDragonPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  filter: drop-shadow(0 10px 30px rgba(80,60,20,0.35));
+}
+.kiss-emoji {
+  position: absolute;
+  right: 14%;
+  top: 32%;
+  font-size: min(9vw, 42px);
+  opacity: 0;
+  animation: kissFly 1.3s ease-out 0.45s both;
+}
+@keyframes kissDragonPop {
+  0%   { transform: scale(0.4) rotate(-6deg); opacity: 0; }
+  65%  { transform: scale(1.08) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes kissFly {
+  0%   { transform: translate(0, 0) scale(0.5); opacity: 0; }
+  18%  { opacity: 1; transform: translate(6px, -6px) scale(1); }
+  100% { transform: translate(130px, -150px) scale(1.5) rotate(25deg); opacity: 0; }
+}
+@keyframes kissOverlayFade {
+  0%, 78% { opacity: 1; }
+  100%    { opacity: 0; }
+}
+
 /* ── Barra di riempimento (progress fill) ── */
 .fill-track {
   width: 100%;
