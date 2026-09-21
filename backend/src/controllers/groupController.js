@@ -7,7 +7,7 @@ const getGroups = async (req, res) => {
     const [groupsResult, membersResult] = await Promise.all([
       pool.query('SELECT * FROM groups ORDER BY name ASC'),
       pool.query(
-        `SELECT ug.group_id, u.id as user_id, u.name
+        `SELECT ug.group_id, u.id as user_id, u.name, u.email
          FROM user_groups ug JOIN users u ON ug.user_id = u.id
          ORDER BY u.name ASC`
       ),
@@ -16,7 +16,7 @@ const getGroups = async (req, res) => {
     const membersMap = {};
     membersResult.rows.forEach(r => {
       if (!membersMap[r.group_id]) membersMap[r.group_id] = [];
-      membersMap[r.group_id].push({ id: r.user_id, name: r.name });
+      membersMap[r.group_id].push({ id: r.user_id, name: r.name, email: r.email });
     });
 
     const groups = groupsResult.rows.map(g => ({
