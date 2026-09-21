@@ -1,4 +1,5 @@
 const { pool } = require('../db/database');
+const { sendEmail } = require('../utils/emailService');
 
 // Lista tutti i gruppi con i membri
 const getGroups = async (req, res) => {
@@ -81,4 +82,39 @@ const setGroupMembers = async (req, res) => {
   }
 };
 
-module.exports = { getGroups, createGroup, deleteGroup, setGroupMembers };
+// Invia un'email a tutti i membri del gruppo (invii individuali, mai in "A:" insieme)
+const sendGroupEmail = async (req, res) => {
+  const { id } = req.params;
+  const { subject, message } = req.body;
+  if (!subject?.trim() || !message?.trim()) {
+    return res.status(400).json({ error: 'Oggetto e messaggio sono obbligatori' });
+  }
+  try {
+    const groupRes = await pool.query('SELECT name FROM groups WHERE id = $1', [id]);
+    if (groupRes.rows.length === 0) return res.status(404).json({ error: 'Group not found' });
+
+    const membersRes = await pool.query(
+      `SELECT u.email, u.name FROM user_groups ug JOIN users u ON ug.user_id = u.id WHERE ug.group_id = $1`,
+      [id]
+    );
+    if (membersRes.rows.length === 0) {
+      return res.status(400).json({ error: 'Questo gruppo non ha ancora membri' });
+    }
+
+    const results = await Promise.all(
+      membersRes.rows.map(m =>
+        sendEmail(m.email, subject.trim(), `Ciao ${m.name},\n\n${message.trim()}`)
+          .then(r => ({ ok: !!r, email: m.email }))
+      )
+    );
+    const sent = results.filter(r => r.ok).length;
+    const failed = results.length - sent;
+
+    res.json({ message: 'Invio completato', sent, failed, total: results.length });
+  } catch (err) {
+    console.error('Send group email error:', err);
+    res.status(500).json({ error: "Errore nell'invio delle email" });
+  }
+};
+
+module.exports = { getGroups, createGroup, deleteGroup, setGroupMembers, sendGroupEmail };
