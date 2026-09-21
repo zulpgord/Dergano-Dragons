@@ -89,6 +89,8 @@ export const groupsAPI = {
     api.delete(`/groups/${id}`),
   setMembers: (id, userIds) =>
     api.put(`/groups/${id}/members`, { user_ids: userIds }),
+  sendEmail: (id, subject, message) =>
+    api.post(`/groups/${id}/email`, { subject, message }),
 };
 
 export default api;
