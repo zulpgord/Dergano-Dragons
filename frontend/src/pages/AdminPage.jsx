@@ -1259,6 +1259,11 @@ function GroupsSection() {
   const [editingGroup, setEditingGroup] = useState(null);
   const [memberIds, setMemberIds] = useState([]);
   const [savingMembers, setSavingMembers] = useState(false);
+  const [emailGroup, setEmailGroup] = useState(null);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailResult, setEmailResult] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1310,6 +1315,21 @@ function GroupsSection() {
     } finally { setSavingMembers(false); }
   };
 
+  const openEmail = (group) => { setEmailGroup(group); setEmailSubject(''); setEmailMessage(''); setEmailResult(null); };
+  const closeEmail = () => { setEmailGroup(null); setEmailSubject(''); setEmailMessage(''); setEmailResult(null); };
+
+  const handleSendEmail = async (e) => {
+    e.preventDefault();
+    if (!emailSubject.trim() || !emailMessage.trim()) return;
+    setSendingEmail(true);
+    try {
+      const res = await groupsAPI.sendEmail(emailGroup.id, emailSubject.trim(), emailMessage.trim());
+      setEmailResult(res.data);
+    } catch (err) {
+      alert(err.response?.data?.error || "Errore nell'invio delle email");
+    } finally { setSendingEmail(false); }
+  };
+
   const cardSty = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', marginBottom: '16px' };
   const btnGold = { background: 'linear-gradient(135deg, #a9791a, #c99a2e)', color: '#fffdf6', border: '1px solid #a9791a', borderRadius: '7px', fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '0.82rem', padding: '8px 16px', cursor: 'pointer' };
   const btnGray = { background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #d9c99e', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem' };
@@ -1341,6 +1361,8 @@ function GroupsSection() {
                   </div>
                   <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                     <button onClick={() => openMembers(g)} style={btnGray}>👥 Membri</button>
+                    <button onClick={() => openEmail(g)} disabled={g.members.length === 0} title={g.members.length === 0 ? 'Aggiungi prima dei membri' : 'Invia email al gruppo'}
+                      style={{ ...btnGray, opacity: g.members.length === 0 ? 0.5 : 1 }}>✉️ Email</button>
                     <button onClick={() => handleDelete(g)} title="Elimina gruppo"
                       style={{ width: '34px', height: '34px', borderRadius: '7px', background: 'var(--bg-card)', border: '1px solid var(--border)', cursor: 'pointer' }}>🗑️</button>
                   </div>
@@ -1381,6 +1403,47 @@ function GroupsSection() {
               </button>
               <button onClick={() => setEditingGroup(null)} style={btnGray}>Annulla</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modale invio email al gruppo ── */}
+      {emailGroup && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backgroundColor: 'rgba(44,32,17,0.45)' }}
+          onClick={closeEmail}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: 'var(--bg-card, #fffdf6)', border: '1px solid var(--border-gold, #a9791a)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(80,60,20,0.25)', width: '100%', maxWidth: '420px', padding: '1.5rem', maxHeight: '85vh', overflowY: 'auto' }}
+          >
+            {emailResult ? (
+              <>
+                <h3 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: '0 0 10px', fontSize: '1rem' }}>✉️ Invio completato</h3>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '4px' }}>
+                  ✅ {emailResult.sent} email inviate{emailResult.failed > 0 ? ` — ⚠️ ${emailResult.failed} fallite` : ''} (su {emailResult.total} membri).
+                </p>
+                <button onClick={closeEmail} style={{ ...btnGold, width: '100%', marginTop: '14px' }}>Chiudi</button>
+              </>
+            ) : (
+              <>
+                <h3 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: '0 0 4px', fontSize: '1rem' }}>✉️ Email a "{emailGroup.name}"</h3>
+                <p style={{ fontSize: '0.78rem', color: '#9c8a66', margin: '0 0 14px' }}>
+                  Verrà inviata singolarmente a {emailGroup.members.length} membri: {emailGroup.members.map(m => m.name).join(', ')}.
+                </p>
+                <form onSubmit={handleSendEmail} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <input type="text" value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Oggetto" required style={IS} />
+                  <textarea value={emailMessage} onChange={e => setEmailMessage(e.target.value)} placeholder="Messaggio..." required rows={6}
+                    style={{ ...IS, resize: 'vertical', fontFamily: 'inherit' }} />
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button type="submit" disabled={sendingEmail} style={{ ...btnGold, flex: 1, opacity: sendingEmail ? 0.6 : 1 }}>
+                      {sendingEmail ? 'Invio in corso...' : '✉️ Invia a tutti'}
+                    </button>
+                    <button type="button" onClick={closeEmail} style={btnGray}>Annulla</button>
+                  </div>
+                </form>
+              </>
+            )}
           </div>
         </div>
       )}
