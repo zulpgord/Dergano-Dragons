@@ -36,6 +36,26 @@ const updateUserRole = async (req, res) => {
   }
 };
 
+// Update user name (admin only) — non tocca l'email
+const updateUserName = async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name || !name.trim()) {
+    return res.status(400).json({ error: 'Name is required' });
+  }
+  try {
+    const result = await pool.query(
+      'UPDATE users SET name = $1, updated_at = NOW() WHERE id = $2 RETURNING id, email, name, role',
+      [name.trim(), id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ message: 'Name updated', user: result.rows[0] });
+  } catch (err) {
+    console.error('Update user name error:', err);
+    res.status(500).json({ error: 'Failed to update name' });
+  }
+};
+
 // Reset user password (admin only)
 const resetUserPassword = async (req, res) => {
   const { id } = req.params;
@@ -138,4 +158,4 @@ const fixFutureShifts = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, updateUserRole, resetUserPassword, getStats, getShiftStats, fixFutureShifts };
+module.exports = { getUsers, updateUserRole, updateUserName, resetUserPassword, getStats, getShiftStats, fixFutureShifts };

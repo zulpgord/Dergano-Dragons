@@ -85,6 +85,59 @@ const assignShift = async (req, res) => {
   }
 };
 
+// Admin: iscrive manualmente un eroe a una sessione (bypassa il self-assign)
+const adminAssignUser = async (req, res) => {
+  const { shiftId } = req.params;
+  const { user_id, seats } = req.body;
+
+  if (!user_id) return res.status(400).json({ error: 'user_id richiesto' });
+
+  let requestedSeats = parseInt(seats, 10);
+  if (!Number.isInteger(requestedSeats) || requestedSeats < 1) requestedSeats = 1;
+  if (requestedSeats > 6) requestedSeats = 6;
+
+  try {
+    const existingAssignment = await pool.query(
+      'SELECT id, status FROM assignments WHERE shift_id = $1 AND user_id = $2',
+      [shiftId, user_id]
+    );
+    if (existingAssignment.rows.length > 0 && ['assigned', 'waiting'].includes(existingAssignment.rows[0].status)) {
+      return res.status(400).json({ error: "Questo eroe è già iscritto o in lista d'attesa per questa sessione" });
+    }
+
+    const [shiftRes, seatsRes] = await Promise.all([
+      pool.query('SELECT required_count FROM shifts WHERE id = $1', [shiftId]),
+      pool.query("SELECT COALESCE(SUM(seats), 0) as total FROM assignments WHERE shift_id = $1 AND status = 'assigned'", [shiftId]),
+    ]);
+    if (shiftRes.rows.length === 0) return res.status(404).json({ error: 'Shift not found' });
+
+    const requiredCount = shiftRes.rows[0].required_count;
+    const currentAssignedSeats = parseInt(seatsRes.rows[0].total);
+    const newStatus = (currentAssignedSeats + requestedSeats) > requiredCount ? 'waiting' : 'assigned';
+
+    let result;
+    if (existingAssignment.rows.length > 0) {
+      result = await pool.query(
+        'UPDATE assignments SET status = $1, seats = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
+        [newStatus, requestedSeats, existingAssignment.rows[0].id]
+      );
+    } else {
+      result = await pool.query(
+        'INSERT INTO assignments (shift_id, user_id, status, seats) VALUES ($1, $2, $3, $4) RETURNING *',
+        [shiftId, user_id, newStatus, requestedSeats]
+      );
+    }
+
+    res.status(201).json({
+      message: newStatus === 'waiting' ? 'Aggiunto in lista di attesa' : 'Iscritto',
+      assignment: result.rows[0],
+    });
+  } catch (err) {
+    console.error('Admin assign user error:', err);
+    res.status(500).json({ error: "Errore nell'iscrizione manuale" });
+  }
+};
+
 // Cancel assignment (until 2 hours before shift) — se l'iscrizione cancellata
 // era 'assigned', promuove in ordine chi è in waiting list finché i posti liberati bastano.
 const cancelAssignment = async (req, res) => {
@@ -196,4 +249,4 @@ const getUserAssignments = async (req, res) => {
   }
 };
 
-module.exports = { assignShift, cancelAssignment, getUserAssignments };
+module.exports = { assignShift, adminAssignUser, cancelAssignment, getUserAssignments };

@@ -47,7 +47,7 @@ const getShifts = async (req, res) => {
          GROUP BY shift_id, status`
       ),
       pool.query(
-        `SELECT a.shift_id, a.status, a.seats, u.name
+        `SELECT a.id, a.shift_id, a.status, a.seats, u.id as user_id, u.name
          FROM assignments a
          JOIN users u ON a.user_id = u.id
          WHERE a.status IN ('assigned', 'waiting')
@@ -72,7 +72,7 @@ const getShifts = async (req, res) => {
     usersResult.rows.forEach(r => {
       const map = r.status === 'assigned' ? usersMap : waitingUsersMap;
       if (!map[r.shift_id]) map[r.shift_id] = [];
-      map[r.shift_id].push({ name: r.name, seats: r.seats || 1 });
+      map[r.shift_id].push({ id: r.id, user_id: r.user_id, name: r.name, seats: r.seats || 1 });
     });
 
     const shiftGroupsMap = {};
