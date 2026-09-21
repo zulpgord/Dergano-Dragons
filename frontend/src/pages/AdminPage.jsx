@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { shiftsAPI, locationsAPI, adminAPI, authAPI, groupsAPI } from '../services/api';
+import { shiftsAPI, locationsAPI, adminAPI, authAPI, groupsAPI, assignmentsAPI } from '../services/api';
 
 function getWeekStart(date) {
   const d = new Date(date);
@@ -37,12 +37,50 @@ function FillBar({ current, total, height = 7 }) {
 }
 
 // ── Modale dettaglio sessione: lista iscritti + lista d'attesa ─────────────
-function SessionDetailModal({ session, onClose }) {
+function SessionDetailModal({ session, onClose, heroes, onRefresh }) {
+  const [removingId, setRemovingId] = useState(null);
+  const [addUserId, setAddUserId] = useState('');
+  const [addSeats, setAddSeats] = useState(1);
+  const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    setAddUserId('');
+    setAddSeats(1);
+  }, [session?.id]);
+
   if (!session) return null;
   const fmt = dt => new Date(dt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   const fmtDate = dt => new Date(dt).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const assignedUsers = session.assigned_users || [];
   const waitingUsers = session.waiting_users || [];
+  const registeredIds = new Set([...assignedUsers, ...waitingUsers].map(u => u.user_id));
+  const availableHeroes = (heroes || []).filter(h => !registeredIds.has(h.id));
+
+  const handleRemove = async (assignmentId) => {
+    if (!confirm('Rimuovere questo eroe dalla sessione?')) return;
+    setRemovingId(assignmentId);
+    try {
+      await assignmentsAPI.cancelAssignment(assignmentId);
+      await onRefresh();
+      onClose();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Errore nella rimozione');
+      setRemovingId(null);
+    }
+  };
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!addUserId) return;
+    setAdding(true);
+    try {
+      await assignmentsAPI.adminAssignUser(session.id, addUserId, addSeats);
+      await onRefresh();
+      onClose();
+    } catch (err) {
+      alert(err.response?.data?.error || "Errore nell'iscrizione");
+    } finally { setAdding(false); }
+  };
 
   return (
     <div
@@ -98,7 +136,11 @@ function SessionDetailModal({ session, onClose }) {
                   color: '#a9791a', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
                 }}>{u.name.charAt(0).toUpperCase()}</span>
-                {u.name}{u.seats > 1 && <span style={{ color: '#9c8a66', fontSize: '0.78rem' }}> — {u.seats} posti</span>}
+                <span style={{ flex: 1 }}>{u.name}{u.seats > 1 && <span style={{ color: '#9c8a66', fontSize: '0.78rem' }}> — {u.seats} posti</span>}</span>
+                <button onClick={() => handleRemove(u.id)} disabled={removingId === u.id} title="Rimuovi dalla sessione"
+                  style={{ background: 'none', border: 'none', color: '#a3261e', cursor: 'pointer', fontSize: '0.85rem', opacity: removingId === u.id ? 0.5 : 1 }}>
+                  🗑️
+                </button>
               </div>
             ))}
           </div>
@@ -119,9 +161,43 @@ function SessionDetailModal({ session, onClose }) {
                   color: '#8a651b', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '0.72rem', fontWeight: 700, flexShrink: 0,
                 }}>{i + 1}</span>
-                {u.name}{u.seats > 1 && <span style={{ fontSize: '0.78rem' }}> — {u.seats} posti</span>}
+                <span style={{ flex: 1 }}>{u.name}{u.seats > 1 && <span style={{ fontSize: '0.78rem' }}> — {u.seats} posti</span>}</span>
+                <button onClick={() => handleRemove(u.id)} disabled={removingId === u.id} title="Rimuovi dalla sessione"
+                  style={{ background: 'none', border: 'none', color: '#a3261e', cursor: 'pointer', fontSize: '0.85rem', opacity: removingId === u.id ? 0.5 : 1 }}>
+                  🗑️
+                </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {!session.cancelled && (
+          <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+            <p style={{ fontSize: '0.72rem', color: '#6b5a3c', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Cinzel, serif' }}>
+              ➕ Iscrivi un eroe manualmente
+            </p>
+            {availableHeroes.length === 0 ? (
+              <p style={{ fontSize: '0.82rem', color: '#9c8a66' }}>Tutti gli eroi sono già iscritti o in attesa per questa sessione.</p>
+            ) : (
+              <form onSubmit={handleAdd} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <select value={addUserId} onChange={e => setAddUserId(e.target.value)} required
+                  style={{ flex: '1 1 160px', padding: '8px 10px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '0.85rem' }}>
+                  <option value="">Scegli eroe...</option>
+                  {availableHeroes.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+                </select>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <button type="button" onClick={() => setAddSeats(s => Math.max(1, s - 1))}
+                    style={{ width: '24px', height: '24px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: '#a9791a', cursor: 'pointer' }}>−</button>
+                  <span style={{ minWidth: '16px', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text)' }}>{addSeats}</span>
+                  <button type="button" onClick={() => setAddSeats(s => Math.min(6, s + 1))}
+                    style={{ width: '24px', height: '24px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: '#a9791a', cursor: 'pointer' }}>+</button>
+                </div>
+                <button type="submit" disabled={adding || !addUserId}
+                  style={{ padding: '8px 14px', background: 'linear-gradient(135deg, #a9791a, #c99a2e)', color: '#fffdf6', border: '1px solid #a9791a', borderRadius: '7px', fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', opacity: (adding || !addUserId) ? 0.6 : 1 }}>
+                  {adding ? '...' : 'Iscrivi'}
+                </button>
+              </form>
+            )}
           </div>
         )}
       </div>
@@ -149,6 +225,7 @@ function SessionsSection({ locations }) {
   });
 
   const [groups, setGroups] = useState([]);
+  const [heroes, setHeroes] = useState([]);
   const [allSessions, setAllSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [rangeMode, setRangeMode] = useState('mese'); // 'settimana' | 'mese'
@@ -164,6 +241,7 @@ function SessionsSection({ locations }) {
 
   useEffect(() => {
     groupsAPI.getGroups().then(res => setGroups(res.data)).catch(() => {});
+    adminAPI.getUsers().then(res => setHeroes(res.data)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -263,6 +341,26 @@ function SessionsSection({ locations }) {
   }).sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
   const visibleSessions = rangeMode === 'settimana' ? weekSessions : monthSessionsAdmin;
+
+  // ── Resoconto per trimestre: sessioni + iscritti aggregati per Q1-Q4 ──
+  const quarterlyData = (() => {
+    const map = {};
+    allSessions.forEach(s => {
+      const d = new Date(s.start_time);
+      const q = Math.floor(d.getMonth() / 3) + 1;
+      const key = `${d.getFullYear()}-Q${q}`;
+      if (!map[key]) map[key] = { year: d.getFullYear(), quarter: q, total: 0, cancelled: 0, active: 0, enrolled: 0, fillSum: 0 };
+      map[key].total += 1;
+      if (s.cancelled) {
+        map[key].cancelled += 1;
+      } else {
+        map[key].active += 1;
+        map[key].enrolled += s.assigned_count;
+        map[key].fillSum += Math.min(1, s.assigned_count / (s.required_count || 1));
+      }
+    });
+    return Object.values(map).sort((a, b) => a.year - b.year || a.quarter - b.quarter);
+  })();
 
   const prevWeek = () => setWeekStart(w => addDays(w, -7));
   const nextWeek = () => setWeekStart(w => addDays(w, 7));
@@ -481,7 +579,7 @@ function SessionsSection({ locations }) {
 
   return (
     <div>
-      <SessionDetailModal session={detailSession} onClose={() => setDetailSession(null)} />
+      <SessionDetailModal session={detailSession} onClose={() => setDetailSession(null)} heroes={heroes} onRefresh={loadSessions} />
 
       {/* ── Crea sessione ── */}
       <div style={cardSty}>
@@ -588,78 +686,119 @@ function SessionsSection({ locations }) {
         )}
       </div>
 
-      {/* ── KPI del periodo ── */}
-      <div className="kpi-grid-2" style={{ marginBottom: '16px' }}>
-        <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-          <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>
-            Sessioni {rangeMode === 'settimana' ? 'della settimana' : 'del mese'}
-          </p>
-          <p style={{ margin: '4px 0 0', fontSize: '1.8rem', fontWeight: 900, color: '#a9791a', fontFamily: 'Cinzel, serif' }}>{kpiSessionCount}</p>
+      {/* ── KPI del periodo (solo settimana/mese) ── */}
+      {rangeMode !== 'trimestre' && (
+        <div className="kpi-grid-2" style={{ marginBottom: '16px' }}>
+          <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>
+              Sessioni {rangeMode === 'settimana' ? 'della settimana' : 'del mese'}
+            </p>
+            <p style={{ margin: '4px 0 0', fontSize: '1.8rem', fontWeight: 900, color: '#a9791a', fontFamily: 'Cinzel, serif' }}>{kpiSessionCount}</p>
+          </div>
+          <div style={{ padding: '14px', borderRadius: '10px', background: kpiColor.bg, border: `1px solid ${kpiColor.border}` }}>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: kpiColor.text, fontFamily: 'Cinzel, serif' }}>% riempimento medio</p>
+            <p style={{ margin: '4px 0 0', fontSize: '1.8rem', fontWeight: 900, color: kpiColor.text, fontFamily: 'Cinzel, serif' }}>{kpiFillPercent}%</p>
+          </div>
         </div>
-        <div style={{ padding: '14px', borderRadius: '10px', background: kpiColor.bg, border: `1px solid ${kpiColor.border}` }}>
-          <p style={{ margin: 0, fontSize: '0.78rem', color: kpiColor.text, fontFamily: 'Cinzel, serif' }}>% riempimento medio</p>
-          <p style={{ margin: '4px 0 0', fontSize: '1.8rem', fontWeight: 900, color: kpiColor.text, fontFamily: 'Cinzel, serif' }}>{kpiFillPercent}%</p>
-        </div>
-      </div>
+      )}
 
-      {/* ── Lista sessioni: settimana o mese ── */}
+      {/* ── Lista sessioni: settimana, mese o trimestre ── */}
       <div style={cardSty}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
           <h2 style={{ margin: 0, fontFamily: 'Cinzel, serif', color: '#a9791a', fontSize: '1rem' }}>
-            📋 Sessioni {rangeMode === 'settimana' ? 'della settimana' : 'del mese'}
+            📋 {rangeMode === 'settimana' ? 'Sessioni della settimana' : rangeMode === 'mese' ? 'Sessioni del mese' : 'Resoconto per trimestre'}
           </h2>
 
-          {/* Toggle Settimana / Mese */}
+          {/* Toggle Settimana / Mese / Trimestre */}
           <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-surface)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-            {['settimana', 'mese'].map(mode => (
+            {['settimana', 'mese', 'trimestre'].map(mode => (
               <button key={mode} onClick={() => setRangeMode(mode)} style={{
                 padding: '5px 14px', borderRadius: '6px', fontSize: '0.78rem', fontFamily: 'Cinzel, serif', fontWeight: 600,
                 background: rangeMode === mode ? 'linear-gradient(135deg, #a9791a, #c99a2e)' : 'transparent',
                 color: rangeMode === mode ? '#fffdf6' : '#6b5a3c', border: 'none', cursor: 'pointer',
               }}>
-                {mode === 'settimana' ? 'Settimana' : 'Mese'}
+                {mode === 'settimana' ? 'Settimana' : mode === 'mese' ? 'Mese' : 'Trimestre'}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Navigazione */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '14px' }}>
-          {rangeMode === 'settimana' ? (
-            <>
-              <button onClick={prevWeek} style={{ ...btnGray, padding: '4px 10px' }}>‹</button>
-              <span style={{ fontSize: '0.82rem', color: '#6b5a3c', minWidth: '150px', textAlign: 'center', fontFamily: 'Cinzel, serif' }}>
-                {fmtShortDate(weekStart)} – {fmtShortDate(weekEnd)}
-              </span>
-              <button onClick={nextWeek} style={{ ...btnGray, padding: '4px 10px' }}>›</button>
-              {!isCurrentWeek && (
-                <button onClick={goCurrentWeek} style={{ ...btnGold, padding: '4px 10px', fontSize: '0.75rem' }}>Questa sett.</button>
-              )}
-            </>
+        {rangeMode === 'trimestre' ? (
+          sessionsLoading ? (
+            <p style={{ color: '#6b5a3c', fontFamily: 'Cinzel, serif', textAlign: 'center', padding: '20px' }}>Caricamento...</p>
+          ) : quarterlyData.length === 0 ? (
+            <p style={{ color: '#9c8a66', textAlign: 'center', padding: '24px', fontFamily: 'Cinzel, serif' }}>Nessuna sessione nel periodo disponibile.</p>
           ) : (
-            <>
-              <button onClick={prevMonth} style={{ ...btnGray, padding: '4px 10px' }}>‹</button>
-              <span style={{ fontSize: '0.82rem', color: '#6b5a3c', minWidth: '150px', textAlign: 'center', fontFamily: 'Cinzel, serif' }}>
-                {MONTHS_IT[calMonth.month]} {calMonth.year}
-              </span>
-              <button onClick={nextMonth} style={{ ...btnGray, padding: '4px 10px' }}>›</button>
-              {!isCurrentMonth && (
-                <button onClick={goCurrentMonth} style={{ ...btnGold, padding: '4px 10px', fontSize: '0.75rem' }}>Questo mese</button>
-              )}
-            </>
-          )}
-        </div>
-
-        {sessionsLoading ? (
-          <p style={{ color: '#6b5a3c', fontFamily: 'Cinzel, serif', textAlign: 'center', padding: '20px' }}>Caricamento...</p>
-        ) : visibleSessions.length === 0 ? (
-          <p style={{ color: '#9c8a66', textAlign: 'center', padding: '24px', fontFamily: 'Cinzel, serif' }}>
-            Nessuna sessione {rangeMode === 'settimana' ? 'questa settimana' : 'questo mese'}.
-          </p>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    {['Trimestre', 'Sessioni attive', 'Annullate', 'Iscritti totali', 'Riempimento medio'].map(h => (
+                      <th key={h} style={{ padding: '0 12px 8px 0', textAlign: h === 'Trimestre' ? 'left' : 'center', color: '#6b5a3c', fontFamily: 'Cinzel, serif', fontSize: '0.7rem', letterSpacing: '1px' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {quarterlyData.map(q => {
+                    const avgFill = q.active > 0 ? Math.round((q.fillSum / q.active) * 100) : 0;
+                    return (
+                      <tr key={`${q.year}-${q.quarter}`} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '10px 12px 10px 0', fontFamily: 'Cinzel, serif', fontWeight: 700, color: '#a9791a' }}>Q{q.quarter} {q.year}</td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#206a2a', fontWeight: 600 }}>{q.active}</td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#8a651b' }}>{q.cancelled}</td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: 'var(--text)' }}>{q.enrolled}</td>
+                        <td style={{ padding: '10px 0', textAlign: 'center', color: '#a9791a', fontWeight: 700 }}>{avgFill}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <p style={{ fontSize: '0.72rem', color: '#9c8a66', marginTop: '10px', fontStyle: 'italic' }}>
+                Copre le sessioni attualmente caricate (circa 3 mesi indietro, 9 in avanti da oggi).
+              </p>
+            </div>
+          )
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {visibleSessions.map(renderSessionRow)}
-          </div>
+          <>
+            {/* Navigazione */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '14px' }}>
+              {rangeMode === 'settimana' ? (
+                <>
+                  <button onClick={prevWeek} style={{ ...btnGray, padding: '4px 10px' }}>‹</button>
+                  <span style={{ fontSize: '0.82rem', color: '#6b5a3c', minWidth: '150px', textAlign: 'center', fontFamily: 'Cinzel, serif' }}>
+                    {fmtShortDate(weekStart)} – {fmtShortDate(weekEnd)}
+                  </span>
+                  <button onClick={nextWeek} style={{ ...btnGray, padding: '4px 10px' }}>›</button>
+                  {!isCurrentWeek && (
+                    <button onClick={goCurrentWeek} style={{ ...btnGold, padding: '4px 10px', fontSize: '0.75rem' }}>Questa sett.</button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button onClick={prevMonth} style={{ ...btnGray, padding: '4px 10px' }}>‹</button>
+                  <span style={{ fontSize: '0.82rem', color: '#6b5a3c', minWidth: '150px', textAlign: 'center', fontFamily: 'Cinzel, serif' }}>
+                    {MONTHS_IT[calMonth.month]} {calMonth.year}
+                  </span>
+                  <button onClick={nextMonth} style={{ ...btnGray, padding: '4px 10px' }}>›</button>
+                  {!isCurrentMonth && (
+                    <button onClick={goCurrentMonth} style={{ ...btnGold, padding: '4px 10px', fontSize: '0.75rem' }}>Questo mese</button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {sessionsLoading ? (
+              <p style={{ color: '#6b5a3c', fontFamily: 'Cinzel, serif', textAlign: 'center', padding: '20px' }}>Caricamento...</p>
+            ) : visibleSessions.length === 0 ? (
+              <p style={{ color: '#9c8a66', textAlign: 'center', padding: '24px', fontFamily: 'Cinzel, serif' }}>
+                Nessuna sessione {rangeMode === 'settimana' ? 'questa settimana' : 'questo mese'}.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {visibleSessions.map(renderSessionRow)}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -678,6 +817,9 @@ function HeroesSection() {
   const [showPwd, setShowPwd] = useState(false);
   const [savingPwd, setSavingPwd] = useState(false);
   const [pwdDone, setPwdDone] = useState(false);
+  const [renameHero, setRenameHero] = useState(null);
+  const [newName, setNewName] = useState('');
+  const [savingName, setSavingName] = useState(false);
 
   const load = useCallback(async () => {
     try { const res = await adminAPI.getUsers(); setHeroes(res.data); }
@@ -697,6 +839,22 @@ function HeroesSection() {
 
   const openReset = (hero) => { setResetHero(hero); setNewPwd(''); setShowPwd(false); setPwdDone(false); };
   const closeReset = () => { setResetHero(null); setNewPwd(''); setPwdDone(false); };
+
+  const openRename = (hero) => { setRenameHero(hero); setNewName(hero.name); };
+  const closeRename = () => { setRenameHero(null); setNewName(''); };
+
+  const handleRename = async (e) => {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setSavingName(true);
+    try {
+      await adminAPI.updateUserName(renameHero.id, newName.trim());
+      setHeroes(prev => prev.map(u => u.id === renameHero.id ? { ...u, name: newName.trim() } : u));
+      closeRename();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Errore nel rinominare l\'eroe');
+    } finally { setSavingName(false); }
+  };
 
   const generateRandomPwd = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
@@ -743,7 +901,13 @@ function HeroesSection() {
             <tbody>
               {heroes.map(u => (
                 <tr key={u.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '10px 16px 10px 0', fontWeight: 700, color: 'var(--text)' }}>{u.name}</td>
+                  <td style={{ padding: '10px 16px 10px 0', fontWeight: 700, color: 'var(--text)' }}>
+                    {u.name}
+                    <button onClick={() => openRename(u)} title="Rinomina eroe"
+                      style={{ background: 'none', border: 'none', color: '#9c8a66', cursor: 'pointer', fontSize: '0.8rem', marginLeft: '6px' }}>
+                      ✏️
+                    </button>
+                  </td>
                   <td style={{ padding: '10px 16px 10px 0', color: '#6b5a3c' }}>{u.email}</td>
                   <td style={{ padding: '10px 16px 10px 0' }}>
                     <span style={{
@@ -835,6 +999,33 @@ function HeroesSection() {
           </div>
         </div>
       )}
+
+      {/* ── Modale rinomina eroe ── */}
+      {renameHero && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 70, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backgroundColor: 'rgba(44,32,17,0.45)' }}
+          onClick={closeRename}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: 'var(--bg-card, #fffdf6)', border: '1px solid var(--border-gold, #a9791a)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(80,60,20,0.25)', width: '100%', maxWidth: '340px', padding: '1.5rem' }}
+          >
+            <h3 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', margin: '0 0 4px', fontSize: '1rem' }}>✏️ Rinomina eroe</h3>
+            <p style={{ fontSize: '0.78rem', color: '#9c8a66', margin: '0 0 14px' }}>{renameHero.email} (l'email non cambia)</p>
+            <form onSubmit={handleRename} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <input type="text" value={newName} onChange={e => setNewName(e.target.value)} required autoFocus style={inputSty} />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button type="submit" disabled={savingName} style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #a9791a, #c99a2e)', color: '#fffdf6', border: '1px solid #a9791a', borderRadius: '8px', fontFamily: 'Cinzel, serif', fontWeight: 700, cursor: 'pointer', opacity: savingName ? 0.6 : 1 }}>
+                  {savingName ? 'Salvataggio...' : 'Salva'}
+                </button>
+                <button type="button" onClick={closeRename} style={{ padding: '10px 16px', background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #d9c99e', borderRadius: '8px', cursor: 'pointer' }}>
+                  Annulla
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -845,6 +1036,7 @@ function HeroesSection() {
 function StatsSection() {
   const [stats, setStats] = useState([]);
   const [shiftStats, setShiftStats] = useState(null);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(String(currentYear));
@@ -869,6 +1061,11 @@ function StatsSection() {
     finally { setLoading(false); }
   }, [year, month]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { adminAPI.getUsers().then(res => setAllUsers(res.data)).catch(() => {}); }, []);
+
+  const avventurieriTotali = allUsers.filter(u => u.role === 'volunteer').length;
+  const numeroAdmin = allUsers.filter(u => u.role === 'admin').length;
+  const avventurieriAttivi = stats.filter(s => s.active_bookings > 0).length;
 
   const cardSty = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', marginBottom: '16px' };
   const selSty = { ...IS, width: 'auto', padding: '6px 12px' };
@@ -899,6 +1096,22 @@ function StatsSection() {
         <div style={cardSty}><p style={{ color: '#6b5a3c', fontFamily: 'Cinzel, serif' }}>Caricamento...</p></div>
       ) : (
         <>
+          <div style={cardSty}>
+            <h3 style={{ fontFamily: 'Cinzel, serif', color: '#6b5a3c', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>👥 Eroi</h3>
+            <div className="form-grid-3">
+              {[
+                { label: 'Avventurieri totali', val: avventurieriTotali, color: '#2c2011', bg: 'rgba(217,201,158,0.3)' },
+                { label: 'Attivi nel periodo', val: avventurieriAttivi, color: '#206a2a', bg: 'rgba(47,125,58,0.12)' },
+                { label: 'Admin', val: numeroAdmin, color: '#a9791a', bg: 'rgba(169,121,26,0.12)' },
+              ].map(({label, val, color, bg}) => (
+                <div key={label} style={{ textAlign: 'center', padding: '12px', background: bg, borderRadius: '8px' }}>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 900, color, fontFamily: 'Cinzel, serif' }}>{val}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#6b5a3c', marginTop: '4px' }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {shiftStats && (
             <div style={cardSty}>
               <h3 style={{ fontFamily: 'Cinzel, serif', color: '#6b5a3c', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>📋 Riepilogo sessioni nel periodo</h3>
