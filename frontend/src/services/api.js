@@ -45,6 +45,8 @@ export const shiftsAPI = {
 export const assignmentsAPI = {
   assignShift: (shiftId, seats = 1, hoursVolunteered = null) =>
     api.post('/assignments', { shift_id: shiftId, seats, hours_volunteered: hoursVolunteered }),
+  adminAssignUser: (shiftId, userId, seats = 1) =>
+    api.post(`/assignments/admin/${shiftId}`, { user_id: userId, seats }),
   cancelAssignment: (id) =>
     api.delete(`/assignments/${id}`),
   getUserAssignments: () =>
@@ -67,6 +69,8 @@ export const adminAPI = {
     api.get('/admin/users'),
   updateUserRole: (id, role) =>
     api.put(`/admin/users/${id}/role`, { role }),
+  updateUserName: (id, name) =>
+    api.put(`/admin/users/${id}/name`, { name }),
   getStats: (params = {}) =>
     api.get('/admin/stats', { params }),
   getShiftStats: (params = {}) =>
