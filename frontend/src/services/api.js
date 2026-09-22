@@ -19,12 +19,14 @@ api.interceptors.request.use((config) => {
 
 // Auth endpoints
 export const authAPI = {
-  register: (email, password, name) =>
-    api.post('/auth/register', { email, password, name }),
+  register: (email, password, name, privacyAccepted) =>
+    api.post('/auth/register', { email, password, name, privacy_accepted: privacyAccepted }),
   login: (email, password) =>
     api.post('/auth/login', { email, password }),
   resetPassword: (email, newPassword) =>
     api.post('/auth/reset-password', { email, newPassword }),
+  deleteMyAccount: () =>
+    api.delete('/auth/me'),
 };
 
 // Shifts endpoints
