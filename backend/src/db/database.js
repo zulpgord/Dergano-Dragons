@@ -116,6 +116,11 @@ async function initializeDatabase() {
       ALTER TABLE assignments ADD COLUMN IF NOT EXISTS seats INTEGER DEFAULT 1;
     `);
 
+    // Migration: registra quando l'utente ha accettato l'informativa privacy
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS privacy_accepted_at TIMESTAMP DEFAULT NULL;
+    `);
+
     console.log('✅ Database initialized');
   } catch (err) {
     console.error('Error initializing database:', err);
