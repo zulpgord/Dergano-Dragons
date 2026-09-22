@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { shiftsAPI, locationsAPI, adminAPI, authAPI, groupsAPI, assignmentsAPI } from '../services/api';
+import { shiftsAPI, locationsAPI, adminAPI, authAPI, groupsAPI, assignmentsAPI, contentAPI } from '../services/api';
 
 function getWeekStart(date) {
   const d = new Date(date);
@@ -1406,6 +1406,82 @@ function GroupsSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Sezione: Privacy — modifica l'informativa senza dover ripubblicare il codice
+// ═══════════════════════════════════════════════════════════════════════════════
+function PrivacyEditorSection() {
+  const [text, setText] = useState('');
+  const [updatedAt, setUpdatedAt] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    contentAPI.get('privacy_policy')
+      .then(res => { setText(res.data.content); setUpdatedAt(res.data.updated_at); })
+      .catch(() => alert("Errore nel caricamento dell'informativa"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    try {
+      const res = await contentAPI.update('privacy_policy', text);
+      setUpdatedAt(res.data.updated_at);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Errore nel salvataggio');
+    } finally { setSaving(false); }
+  };
+
+  const cardSty = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px' };
+  const btnGold = { background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.85rem', padding: '10px 20px', cursor: 'pointer' };
+
+  return (
+    <div style={cardSty}>
+      <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 6px', fontSize: '1.05rem' }}>📄 Informativa privacy</h2>
+      <p style={{ fontSize: '0.78rem', color: '#8a7f6c', margin: '0 0 4px' }}>
+        Il testo qui sotto è quello mostrato pubblicamente sulla pagina <code>/privacy</code>, raggiungibile anche dal link in fondo alla Dashboard e dal modulo di registrazione. Modificalo liberamente: non serve nessuna pubblicazione di codice.
+      </p>
+      {updatedAt && (
+        <p style={{ fontSize: '0.75rem', color: '#8a7f6c', margin: '0 0 14px', fontStyle: 'italic' }}>
+          Ultimo aggiornamento: {new Date(updatedAt).toLocaleString('it-IT')}
+        </p>
+      )}
+      {loading ? (
+        <p style={{ color: '#6b5a3c' }}>Caricamento...</p>
+      ) : (
+        <>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            rows={20}
+            style={{
+              width: '100%', padding: '14px', background: 'var(--bg-surface)', border: '1px solid var(--border)',
+              borderRadius: '8px', color: 'var(--text)', fontSize: '0.88rem', lineHeight: 1.6,
+              fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', resize: 'vertical', boxSizing: 'border-box',
+            }}
+          />
+          <p style={{ fontSize: '0.72rem', color: '#8a7f6c', margin: '6px 0 14px' }}>
+            Suggerimento: lascia una riga vuota tra un paragrafo e l'altro — è così che la pagina pubblica li separa visivamente.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button onClick={handleSave} disabled={saving} style={{ ...btnGold, opacity: saving ? 0.6 : 1 }}>
+              {saving ? 'Salvataggio...' : '💾 Salva modifiche'}
+            </button>
+            {saved && <span style={{ color: '#2b6663', fontSize: '0.85rem', fontWeight: 700 }}>✅ Salvato</span>}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', color: '#8a7f6c', textDecoration: 'underline' }}>
+              👁 Vedi la pagina pubblica
+            </a>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // AdminPage principale
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function AdminPage() {
@@ -1437,6 +1513,7 @@ export default function AdminPage() {
     { id: 'statistiche', label: '📊 Statistiche' },
     { id: 'locations', label: '📍 Locations' },
     { id: 'gruppi', label: '👥 Gruppi' },
+    { id: 'privacy', label: '📄 Privacy' },
   ];
 
   return (
@@ -1467,6 +1544,7 @@ export default function AdminPage() {
         {tab === 'statistiche' && <StatsSection />}
         {tab === 'locations' && <LocationsSection />}
         {tab === 'gruppi' && <GroupsSection />}
+        {tab === 'privacy' && <PrivacyEditorSection />}
       </main>
     </div>
   );
