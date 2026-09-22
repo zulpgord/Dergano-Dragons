@@ -95,4 +95,12 @@ export const groupsAPI = {
     api.post(`/groups/${id}/email`, { subject, message }),
 };
 
+// Contenuti editabili (es. informativa privacy)
+export const contentAPI = {
+  get: (key) =>
+    api.get(`/content/${key}`),
+  update: (key, content) =>
+    api.put(`/content/${key}`, { content }),
+};
+
 export default api;
