@@ -36,6 +36,7 @@ export default function AuthPage() {
   const [resetForm, setResetForm] = useState({ email: '', newPassword: '' });
   const [showPwd, setShowPwd] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '', name: '' });
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -65,7 +66,12 @@ export default function AuthPage() {
       if (isLogin) {
         response = await authAPI.login(formData.email, formData.password);
       } else {
-        response = await authAPI.register(formData.email, formData.password, formData.name);
+        if (!privacyAccepted) {
+          setError("Devi accettare l'informativa privacy per registrarti");
+          setLoading(false);
+          return;
+        }
+        response = await authAPI.register(formData.email, formData.password, formData.name, privacyAccepted);
       }
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -196,7 +202,25 @@ export default function AuthPage() {
               {showPwd ? '🙈' : '👁'}
             </button>
           </div>
-          <button type="submit" disabled={loading} style={btnStyle}>
+          {!isLogin && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.82rem', color: 'var(--text-muted, #6b5a3c)', cursor: 'pointer', lineHeight: 1.4 }}>
+              <input
+                type="checkbox"
+                checked={privacyAccepted}
+                onChange={e => setPrivacyAccepted(e.target.checked)}
+                required
+                style={{ marginTop: '2px', width: '15px', height: '15px', accentColor: '#b0801a', flexShrink: 0 }}
+              />
+              <span>
+                Ho letto e accetto{' '}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#b0801a', fontWeight: 700 }}>
+                  l'informativa privacy
+                </a>
+                . Se ho meno di 14 anni, confermo che questa registrazione è stata effettuata con il consenso di un genitore o tutore.
+              </span>
+            </label>
+          )}
+          <button type="submit" disabled={loading || (!isLogin && !privacyAccepted)} style={{ ...btnStyle, opacity: (!isLogin && !privacyAccepted) ? 0.5 : 1 }}>
             {loading ? '⏳ Caricamento...' : isLogin ? '⚔️ Entra' : '📜 Registrati'}
           </button>
         </form>

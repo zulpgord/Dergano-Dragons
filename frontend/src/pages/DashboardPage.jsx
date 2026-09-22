@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { shiftsAPI, assignmentsAPI } from '../services/api';
+import { shiftsAPI, assignmentsAPI, authAPI } from '../services/api';
 
 // ── Header logo fantasy: solo drago (contiene già dado e titolo) ───────────
 function DerganoHeader() {
@@ -347,6 +347,19 @@ export default function DashboardPage() {
     navigate('/auth');
   };
 
+  const handleDeleteAccount = async () => {
+    if (!confirm('Eliminare definitivamente il tuo account? Verranno cancellate anche tutte le tue iscrizioni alle sessioni. Questa azione non si può annullare.')) return;
+    if (!confirm('Sei sicuro? Non potrai recuperare il tuo account dopo averlo eliminato.')) return;
+    try {
+      await authAPI.deleteMyAccount();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      navigate('/auth');
+    } catch (err) {
+      alert(err.response?.data?.error || "Errore nell'eliminazione dell'account");
+    }
+  };
+
   const prevMonth = () => setCalMonth(({ year, month }) => month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 });
   const nextMonth = () => setCalMonth(({ year, month }) => month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 });
   const goToday = () => { const n = new Date(); setCalMonth({ year: n.getFullYear(), month: n.getMonth() }); };
@@ -431,6 +444,12 @@ export default function DashboardPage() {
               Esci
             </button>
           </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px', maxWidth: '1650px', margin: '4px auto 0', padding: '0 16px', fontSize: '0.72rem' }}>
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#8a7f6c', textDecoration: 'underline' }}>Privacy</a>
+          <button onClick={handleDeleteAccount} style={{ background: 'none', border: 'none', color: '#8a7f6c', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.72rem', padding: 0, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+            Elimina il mio account
+          </button>
         </div>
       </header>
 
