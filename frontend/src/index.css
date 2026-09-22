@@ -2,44 +2,46 @@
    DERGANO & DRAGONS — Fantasy Theme (Light / Parchment)
    ══════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=IM+Fell+English:ital@0;1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Titan+One&family=Luckiest+Guy&family=Atkinson+Hyperlegible:wght@400;700&display=swap');
 
-/* ── Palette fantasy chiara (pergamena) ── */
+/* ── Design System "Dergano & Dragons" — libreria + tavolo di gioco ──
+   Palette e tipografia definite nel Design System (Artifact dedicato):
+   due accenti (gold/teal) + un colore di avviso (wax), mai monocromatico. */
 :root {
   /* Backgrounds */
-  --bg-page:    #f3ecdb;
-  --bg-dark:    #f3ecdb;   /* alias retro-compatibile usato nelle pagine */
-  --bg-card:    #fffdf6;
-  --bg-surface: #ece2c8;
-  --bg-hover:   #e2d5ae;
+  --bg-page:    #f4ead4;   /* token: paper */
+  --bg-dark:    #f4ead4;   /* alias retro-compatibile usato nelle pagine */
+  --bg-card:    #fffbf2;   /* token: card */
+  --bg-surface: #ece0c3;
+  --bg-hover:   #e2d3a8;
 
   /* Accents */
-  --gold:       #a9791a;
-  --gold-light: #c99a2e;
-  --gold-dim:   #d9c48f;
-  --red:        #b3261e;
-  --red-light:  #d3352b;
-  --green:      #2f7d3a;
-  --green-light:#3fa14d;
-  --blue:       #2455a4;
-  --blue-light: #3a6bc4;
+  --gold:       #b0801a;   /* token: gold — azione primaria, una per schermata */
+  --gold-light: #c99a35;
+  --gold-dim:   #ddc38f;
+  --red:        #a23b22;   /* token: wax — avvisi, annullamenti, lista d'attesa */
+  --red-light:  #c14f36;
+  --green:      #2b6663;   /* token: teal — azione secondaria, stato attivo */
+  --green-light:#3a8480;
+  --blue:       #2b6663;   /* consolidato su teal: "le mie sessioni" è comunque uno stato attivo */
+  --blue-light: #3a8480;
 
   /* Text */
-  --text:       #2c2011;
+  --text:       #262019;   /* token: ink */
   --text-muted: #6b5a3c;
-  --text-dim:   #9c8a66;
+  --text-dim:   #8a7f6c;   /* token: stone */
 
   /* Borders */
-  --border:     #d9c99e;
-  --border-gold:#a9791a;
+  --border:     #ddd0b3;
+  --border-gold:#b0801a;
 
   /* Shadows */
-  --shadow-glow: 0 0 10px rgba(169,121,26,0.12), 0 4px 14px rgba(80,60,20,0.10);
-  --shadow-card: 0 2px 10px rgba(80,60,20,0.08);
+  --shadow-glow: 0 0 10px rgba(176,128,26,0.12), 0 4px 14px rgba(38,32,25,0.10);
+  --shadow-card: 0 2px 10px rgba(38,32,25,0.08);
 
-  /* Fonts */
-  --font-title: 'Cinzel', Georgia, serif;
-  --font-body:  'IM Fell English', Georgia, serif;
+  /* Fonts — il display è per i momenti, il sans per i compiti (mai il contrario) */
+  --font-title: 'Titan One', 'Luckiest Guy', fantasy;
+  --font-body:  'Atkinson Hyperlegible', system-ui, sans-serif;
 
   font-size: 16px;
   line-height: 1.5;
@@ -86,8 +88,8 @@ h1, h2, h3 {
 .bg-gray-200            { background-color: var(--bg-hover) !important; }
 .bg-indigo-50           { background-color: rgba(36,85,164,0.08) !important; }
 .bg-indigo-100          { background-color: rgba(36,85,164,0.14) !important; }
-.bg-indigo-600          { background-color: var(--gold) !important; color: #fffdf6 !important; }
-.bg-indigo-700          { background-color: var(--gold-light) !important; color: #fffdf6 !important; }
+.bg-indigo-600          { background-color: var(--gold) !important; color: #fffbf2 !important; }
+.bg-indigo-700          { background-color: var(--gold-light) !important; color: #fffbf2 !important; }
 .bg-indigo-400          { background-color: var(--gold-dim) !important; }
 .bg-red-50              { background-color: rgba(179,38,30,0.08) !important; }
 .bg-red-100             { background-color: rgba(179,38,30,0.14) !important; }
@@ -110,15 +112,15 @@ h1, h2, h3 {
 .text-gray-400          { color: var(--text-dim) !important; }
 .text-indigo-600        { color: var(--gold) !important; }
 .text-indigo-700        { color: var(--gold) !important; }
-.text-green-700         { color: #206a2a !important; }
+.text-green-700         { color: #2b6663 !important; }
 .text-green-900         { color: #1a4d21 !important; }
-.text-red-700           { color: #a3261e !important; }
+.text-red-700           { color: #a23b22 !important; }
 .text-red-600           { color: #b3261e !important; }
-.text-yellow-700        { color: #8a651b !important; }
-.text-yellow-600        { color: #a9791a !important; }
-.text-blue-700          { color: #2455a4 !important; }
-.text-blue-600          { color: #2455a4 !important; }
-.text-white             { color: #fffdf6 !important; }
+.text-yellow-700        { color: #a23b22 !important; }
+.text-yellow-600        { color: #b0801a !important; }
+.text-blue-700          { color: #2b6663 !important; }
+.text-blue-600          { color: #2b6663 !important; }
+.text-white             { color: #fffbf2 !important; }
 
 /* Borders */
 .border                 { border-color: var(--border) !important; }
@@ -146,7 +148,7 @@ h1, h2, h3 {
 button.bg-indigo-600,
 button.bg-indigo-600:hover {
   background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%) !important;
-  color: #fffdf6 !important;
+  color: #fffbf2 !important;
   font-family: var(--font-title) !important;
   font-weight: 700 !important;
   letter-spacing: 0.5px !important;
@@ -160,7 +162,7 @@ button.bg-indigo-600:hover {
 }
 button.bg-red-50 {
   background-color: rgba(179,38,30,0.10) !important;
-  color: #a3261e !important;
+  color: #a23b22 !important;
   border-color: rgba(179,38,30,0.3) !important;
 }
 button.text-indigo-600:hover { color: var(--gold-light) !important; }
@@ -187,7 +189,7 @@ input:focus, select:focus, textarea:focus {
 
 /* Header fantasy */
 header.bg-white {
-  background: linear-gradient(180deg, #fffdf6 0%, #f3ecdb 100%) !important;
+  background: linear-gradient(180deg, #fffbf2 0%, #f4ead4 100%) !important;
   border-bottom: 2px solid var(--border-gold) !important;
   box-shadow: 0 2px 10px rgba(80,60,20,0.08) !important;
 }
@@ -207,8 +209,8 @@ button.border-indigo-600 { color: var(--gold) !important; }
 
 .border-t.border-gray-100 { border-top-color: var(--border) !important; }
 
-.bg-green-600  { background-color: var(--green-light) !important; color: #fffdf6 !important; }
-.bg-red-600 { background-color: var(--red) !important; color: #fffdf6 !important; }
+.bg-green-600  { background-color: var(--green-light) !important; color: #fffbf2 !important; }
+.bg-red-600 { background-color: var(--red) !important; color: #fffbf2 !important; }
 
 /* Decorazione angolare sulle card principali */
 .rounded-xl.shadow-sm::before {
@@ -324,6 +326,39 @@ button.border-indigo-600 { color: var(--gold) !important; }
   opacity: 0;
   animation: kissFly 1.3s ease-out 0.45s both;
 }
+.kiss-waiting-bubble {
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: var(--bg-card, #fffbf2);
+  color: var(--gold, #b0801a);
+  border: 2px solid var(--gold, #b0801a);
+  border-radius: 14px;
+  padding: 8px 16px;
+  font-family: 'Titan One', 'Luckiest Guy', fantasy;
+  font-weight: 700;
+  font-size: min(4.2vw, 18px);
+  box-shadow: 0 4px 14px rgba(80,60,20,0.25);
+  opacity: 0;
+  animation: waitingBubblePop 0.5s ease-out 0.35s both;
+}
+.kiss-waiting-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  transform: translateX(-50%);
+  border-width: 9px 8px 0 8px;
+  border-style: solid;
+  border-color: var(--gold, #b0801a) transparent transparent transparent;
+}
+@keyframes waitingBubblePop {
+  0%   { transform: translateX(-50%) scale(0.5); opacity: 0; }
+  70%  { transform: translateX(-50%) scale(1.06); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
 @keyframes kissDragonPop {
   0%   { transform: scale(0.4) rotate(-6deg); opacity: 0; }
   65%  { transform: scale(1.08) rotate(2deg); opacity: 1; }
@@ -388,8 +423,8 @@ button.border-indigo-600 { color: var(--gold) !important; }
     left: 0; right: 0; bottom: 0;
     padding: 16px;
     background: linear-gradient(0deg, rgba(44,32,17,0.88), rgba(44,32,17,0));
-    color: #fffdf6;
-    font-family: 'Cinzel', serif;
+    color: #fffbf2;
+    font-family: 'Titan One', 'Luckiest Guy', fantasy;
     font-weight: 700;
     font-size: 0.95rem;
     text-align: center;
