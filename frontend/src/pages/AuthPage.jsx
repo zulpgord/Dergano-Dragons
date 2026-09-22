@@ -21,9 +21,9 @@ function DerganoLogo() {
       />
       {/* Separatore ornamentale */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '320px', marginTop: '4px' }}>
-        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #a9791a, transparent)' }} />
-        <span style={{ color: '#a9791a', fontSize: '0.7rem' }}>✦</span>
-        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #a9791a, transparent)' }} />
+        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #b0801a, transparent)' }} />
+        <span style={{ color: '#b0801a', fontSize: '0.7rem' }}>✦</span>
+        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #b0801a, transparent)' }} />
       </div>
     </div>
   );
@@ -78,8 +78,8 @@ export default function AuthPage() {
   };
 
   const cardStyle = {
-    backgroundColor: 'var(--bg-card, #fffdf6)',
-    border: '1px solid var(--border, #d9c99e)',
+    backgroundColor: 'var(--bg-card, #fffbf2)',
+    border: '1px solid var(--border, #ddd0b3)',
     borderRadius: '12px',
     padding: '2.5rem',
     width: '100%',
@@ -90,10 +90,10 @@ export default function AuthPage() {
   const inputStyle = {
     width: '100%',
     padding: '10px 14px',
-    backgroundColor: 'var(--bg-surface, #ece2c8)',
-    border: '1px solid var(--border, #d9c99e)',
+    backgroundColor: 'var(--bg-surface, #ece0c3)',
+    border: '1px solid var(--border, #ddd0b3)',
     borderRadius: '8px',
-    color: 'var(--text, #2c2011)',
+    color: 'var(--text, #262019)',
     fontSize: '0.95rem',
     fontFamily: 'var(--font-body, serif)',
     outline: 'none',
@@ -103,11 +103,11 @@ export default function AuthPage() {
   const btnStyle = {
     width: '100%',
     padding: '11px',
-    background: 'linear-gradient(135deg, #a9791a, #c99a2e)',
-    color: '#fffdf6',
-    border: '1px solid #a9791a',
+    background: 'linear-gradient(135deg, #b0801a, #c99a35)',
+    color: '#fffbf2',
+    border: '1px solid #b0801a',
     borderRadius: '8px',
-    fontFamily: 'Cinzel, Georgia, serif',
+    fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif',
     fontWeight: 700,
     fontSize: '0.9rem',
     letterSpacing: '1px',
@@ -123,13 +123,13 @@ export default function AuthPage() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
-      background: 'radial-gradient(ellipse at center, #fffdf6 0%, #f3ecdb 100%)',
+      background: 'radial-gradient(ellipse at center, #fffbf2 0%, #f4ead4 100%)',
     }}>
       <div style={cardStyle}>
         <DerganoLogo />
 
         <h2 style={{
-          fontFamily: 'Cinzel, serif',
+          fontFamily: 'Titan One, Luckiest Guy, fantasy',
           fontSize: '0.95rem',
           textAlign: 'center',
           color: 'var(--text-muted, #6b5a3c)',
@@ -144,7 +144,7 @@ export default function AuthPage() {
           <div style={{
             background: 'rgba(179,38,30,0.10)',
             border: '1px solid rgba(179,38,30,0.35)',
-            color: '#a3261e',
+            color: '#a23b22',
             padding: '10px 14px',
             borderRadius: '8px',
             marginBottom: '16px',
@@ -190,7 +190,7 @@ export default function AuthPage() {
               onClick={() => setShowPwd(!showPwd)}
               style={{
                 position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: '#9c8a66',
+                background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: '#8a7f6c',
               }}
             >
               {showPwd ? '🙈' : '👁'}
@@ -205,7 +205,7 @@ export default function AuthPage() {
           {isLogin ? 'Non hai ancora un Eroe? ' : 'Hai già un account? '}
           <button
             onClick={() => setIsLogin(!isLogin)}
-            style={{ background: 'none', border: 'none', color: '#a9791a', cursor: 'pointer', fontWeight: 700, fontFamily: 'Cinzel, serif', textDecoration: 'underline' }}
+            style={{ background: 'none', border: 'none', color: '#b0801a', cursor: 'pointer', fontWeight: 700, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', textDecoration: 'underline' }}
           >
             {isLogin ? 'Registrati' : 'Accedi'}
           </button>
@@ -216,7 +216,7 @@ export default function AuthPage() {
               onClick={() => setShowReset(true)}
               style={{
                 display: 'block', width: '100%', marginTop: '10px',
-                background: 'none', border: 'none', color: '#9c8a66',
+                background: 'none', border: 'none', color: '#8a7f6c',
                 cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline',
               }}
             >
@@ -234,7 +234,7 @@ export default function AuthPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
         }}>
           <div style={{ ...cardStyle, maxWidth: '340px' }}>
-            <h3 style={{ fontFamily: 'Cinzel, serif', color: '#a9791a', marginBottom: '16px' }}>🔑 Reimposta password</h3>
+            <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', marginBottom: '16px' }}>🔑 Reimposta password</h3>
             <form onSubmit={handleReset} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <input type="email" placeholder="Email" value={resetForm.email}
                 onChange={e => setResetForm(p => ({ ...p, email: e.target.value }))}
@@ -244,7 +244,7 @@ export default function AuthPage() {
                 required minLength={6} style={inputStyle} />
               <button type="submit" style={btnStyle}>Reimposta</button>
               <button type="button" onClick={() => setShowReset(false)}
-                style={{ ...btnStyle, background: 'transparent', color: '#6b5a3c', border: '1px solid #d9c99e', boxShadow: 'none' }}>
+                style={{ ...btnStyle, background: 'transparent', color: '#6b5a3c', border: '1px solid #ddd0b3', boxShadow: 'none' }}>
                 Annulla
               </button>
             </form>
