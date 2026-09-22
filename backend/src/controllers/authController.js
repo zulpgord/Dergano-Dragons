@@ -4,15 +4,18 @@ const { pool } = require('../db/database');
 require('dotenv').config();
 
 const register = async (req, res) => {
-  const { email, password, name, role } = req.body;
+  const { email, password, name, role, privacy_accepted } = req.body;
   if (!email || !password || !name) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+  if (!privacy_accepted) {
+    return res.status(400).json({ error: "Devi accettare l'informativa privacy per registrarti" });
   }
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const userRole = role && role === 'admin' ? 'admin' : 'volunteer';
     const result = await pool.query(
-      'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role',
+      'INSERT INTO users (email, password_hash, name, role, privacy_accepted_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id, email, name, role',
       [email, hashedPassword, name, userRole]
     );
     const user = result.rows[0];
@@ -122,4 +125,17 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, makeAdmin, getUsers, updateUserRole, resetPassword };
+// Cancellazione account self-service (diritto alla cancellazione).
+// Elimina l'utente e, in cascata, le sue iscrizioni e appartenenze ai gruppi.
+const deleteMyAccount = async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [req.user.id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ message: 'Account eliminato' });
+  } catch (err) {
+    console.error('Delete account error:', err);
+    res.status(500).json({ error: "Errore nell'eliminazione dell'account" });
+  }
+};
+
+module.exports = { register, login, makeAdmin, getUsers, updateUserRole, resetPassword, deleteMyAccount };
