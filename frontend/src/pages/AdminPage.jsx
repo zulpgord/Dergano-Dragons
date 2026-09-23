@@ -869,7 +869,7 @@ function HeroesSection() {
     if (newPwd.length < 6) { alert('La password deve essere di almeno 6 caratteri'); return; }
     setSavingPwd(true);
     try {
-      await authAPI.resetPassword(resetHero.email, newPwd);
+      await adminAPI.resetUserPassword(resetHero.id, newPwd);
       setPwdDone(true);
     } catch (err) {
       alert(err.response?.data?.error || 'Errore nel reset della password');
@@ -1344,14 +1344,14 @@ function GroupsSection() {
           : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {groups.map(g => (
-                <div key={g.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-page)', border: '1px solid var(--border)', borderRadius: '8px' }}>
-                  <div>
+                <div key={g.id} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'var(--bg-page)', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                  <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                     <span style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', fontWeight: 700, color: '#b0801a', fontSize: '0.92rem' }}>{g.name}</span>
-                    <span style={{ marginLeft: '10px', fontSize: '0.78rem', color: '#8a7f6c' }}>
+                    <span style={{ marginLeft: '10px', fontSize: '0.78rem', color: '#8a7f6c', overflowWrap: 'break-word' }}>
                       {g.members.length === 0 ? 'nessun membro' : g.members.map(m => m.name).join(', ')}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     <button onClick={() => openMembers(g)} style={btnGray}>👥 Membri</button>
                     <button onClick={() => copyEmails(g)} disabled={g.members.length === 0} title={g.members.length === 0 ? 'Aggiungi prima dei membri' : 'Copia gli indirizzi email dei membri'}
                       style={{ ...btnGray, opacity: g.members.length === 0 ? 0.5 : 1 }}>
