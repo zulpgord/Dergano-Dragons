@@ -1,4 +1,4 @@
-// ============================================================================
+// -*- coding: utf-8 -*-
 //  IL CONSIGLIO DEL TAVERNIERE — questionario guidato
 //
 //  Risposte a scelta multipla, punteggio deterministico calcolato nel browser:
@@ -8,7 +8,6 @@
 //
 //  L'ultima domanda non assegna punti: sceglie lo STILE (power / goofy) e
 //  filtra quali personaggi mostrare fra quelli della classe consigliata.
-// ============================================================================
 
 export const DOMANDE = [
   {
@@ -110,9 +109,6 @@ export const DOMANDE = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-//  Descrizioni brevi mostrate nel risultato finale
-// ---------------------------------------------------------------------------
 export const CLASSI = {
   Barbaro: { emoji: '🪓', tag: 'Semplice e resistente',
     desc: 'Tanti punti ferita, un\u2019arma grossa e l\u2019Ira, che dimezza quasi tutti i danni. Facile da imparare, difficile da abbattere: se è la tua prima volta al tavolo, qui non sbagli.' },
@@ -140,9 +136,6 @@ export const CLASSI = {
     desc: 'Il Raggio Occulto si lancia all\u2019infinito, tutti i turni, senza limiti: nessun\u2019altra classe ha un attacco magico così a questo livello. In cambio, un patto da rispettare.' },
 };
 
-// ---------------------------------------------------------------------------
-//  Calcolo del punteggio
-// ---------------------------------------------------------------------------
 export function calcolaRisultato(risposte) {
   const punti = {};
   Object.keys(CLASSI).forEach((c) => { punti[c] = 0; });
