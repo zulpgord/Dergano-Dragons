@@ -3,7 +3,7 @@ import { sheetsAPI } from '../services/api';
 import { DOMANDE, CLASSI, calcolaRisultato } from '../data/quizPersonaggi';
 import './PersonaggiPage.css';
 
-export default function PersonaggiPage() {
+export default function PersonaggiPage({ autoQuiz = false }) {
   const [schede, setSchede] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,6 +27,16 @@ export default function PersonaggiPage() {
       .catch(() => setError('Non riesco a raggiungere la taverna in questo momento.'))
       .finally(() => setLoading(false));
   }, []);
+
+  // Se la pagina è raggiunta da /quiz, apre subito il questionario.
+  useEffect(() => {
+    if (autoQuiz) {
+      setQuizAperto(true);
+      setPasso(0);
+      setRisposte({});
+      setEsito(null);
+    }
+  }, [autoQuiz]);
 
   const classi = useMemo(
     () => [...new Set(schede.map((s) => s.klass))].sort((a, b) => a.localeCompare(b)), [schede]);
@@ -116,16 +126,23 @@ export default function PersonaggiPage() {
         <div className="pg-vuoto">
           <p className="pg-vuoto-icona">🕯️</p>
           <h2>La taverna è ancora chiusa</h2>
-          <p>Non ci sono eroi assegnati al tuo nome. Parla con il tuo master: sarà lui ad aprirti la porta.</p>
+          <p>
+            Non ci sono schede assegnate al tuo nome. Parla con il tuo master:
+            sarà lui ad aprirti la porta.
+          </p>
         </div>
       )}
 
       {!loading && schede.length > 0 && (
         <>
           <div className="pg-filtri">
-            <input className="pg-cerca" type="search" placeholder="Cerca per nome…"
-                   value={cerca} onChange={(e) => setCerca(e.target.value)} />
-
+            <input
+              className="pg-cerca"
+              type="search"
+              placeholder="Cerca per nome, classe, razza…"
+              value={cerca}
+              onChange={(e) => setCerca(e.target.value)}
+            />
             <select value={fClasse} onChange={(e) => setFClasse(e.target.value)} aria-label="Filtra per classe">
               <option value="tutte">Tutte le classi</option>
               {classi.map((c) => <option key={c} value={c}>{CLASSI[c]?.emoji || '🎲'} {c}</option>)}
