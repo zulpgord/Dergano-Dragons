@@ -10,6 +10,7 @@ const locationRoutes = require('./src/routes/locationRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
 const groupRoutes = require('./src/routes/groupRoutes');
 const contentRoutes = require('./src/routes/contentRoutes');
+const sheetRoutes = require('./src/routes/sheetRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,6 +25,7 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/sheets', sheetRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
@@ -43,6 +45,7 @@ const startServer = () => {
     console.log('  GET    /api/admin/users (admin)');
     console.log('  PUT    /api/admin/users/:id/role (admin)');
     console.log('  GET    /api/admin/stats (admin)');
+    console.log('  GET    /api/sheets (schede personaggio)');
     try {
       await initializeDatabase();
       console.log('Database initialized');
