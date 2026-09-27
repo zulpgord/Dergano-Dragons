@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { shiftsAPI, locationsAPI, adminAPI, authAPI, groupsAPI, assignmentsAPI, contentAPI } from '../services/api';
+import SchedeAdminTab from './SchedeAdminTab';
 
 function getWeekStart(date) {
   const d = new Date(date);
@@ -1514,6 +1515,7 @@ export default function AdminPage() {
     { id: 'locations', label: '📍 Locations' },
     { id: 'gruppi', label: '👥 Gruppi' },
     { id: 'privacy', label: '📄 Privacy' },
+    { id: 'schede', label: '🎭 Schede' },
   ];
 
   return (
@@ -1545,6 +1547,7 @@ export default function AdminPage() {
         {tab === 'locations' && <LocationsSection />}
         {tab === 'gruppi' && <GroupsSection />}
         {tab === 'privacy' && <PrivacyEditorSection />}
+        {tab === 'schede' && <SchedeAdminTab />}
       </main>
     </div>
   );
