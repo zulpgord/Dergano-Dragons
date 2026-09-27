@@ -418,9 +418,31 @@ export default function DashboardPage() {
         padding: '14px 24px',
         boxShadow: '0 2px 10px rgba(80,60,20,0.08)',
       }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <DerganoHeader />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => navigate('/personaggi')}
+              style={{
+                background: 'var(--bg-card, #fffbf2)',
+                color: '#2b6663', border: '1px solid #2b6663', borderRadius: '8px',
+                padding: '6px 14px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700,
+                fontSize: '0.8rem', cursor: 'pointer', letterSpacing: '0.5px',
+              }}
+            >
+              🎭 Personaggi
+            </button>
+            <button
+              onClick={() => navigate('/quiz')}
+              style={{
+                background: 'var(--bg-card, #fffbf2)',
+                color: '#b0801a', border: '1px solid #b0801a', borderRadius: '8px',
+                padding: '6px 14px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700,
+                fontSize: '0.8rem', cursor: 'pointer', letterSpacing: '0.5px',
+              }}
+            >
+              🎲 Trova la tua classe
+            </button>
             {user.role === 'admin' && (
               <button
                 onClick={() => navigate('/admin')}
