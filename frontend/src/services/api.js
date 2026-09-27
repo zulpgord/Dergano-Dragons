@@ -103,4 +103,20 @@ export const contentAPI = {
     api.put(`/content/${key}`, { content }),
 };
 
+// Schede personaggio (pagina /personaggi)
+export const sheetsAPI = {
+  getSheets: () =>
+    api.get('/sheets'),
+  download: (slug) =>
+    api.get(`/sheets/${slug}/download`),
+  update: (id, campi) =>
+    api.put(`/sheets/${id}`, campi),
+  setGroups: (id, groupIds) =>
+    api.put(`/sheets/${id}/groups`, { group_ids: groupIds }),
+  setUsers: (id, userIds) =>
+    api.put(`/sheets/${id}/users`, { user_ids: userIds }),
+  bulkVisibility: (ids, visibleToAll) =>
+    api.post('/sheets/bulk-visibility', { ids, visible_to_all: visibleToAll }),
+};
+
 export default api;
