@@ -1,4 +1,15 @@
 const { pool } = require('../db/database');
+const { ensureSheetTables } = require('../db/sheetsSchema');
+
+// Le tabelle vengono create alla prima richiesta utile, una sola volta per
+// processo. Così non serve toccare database.js: il controller si autoinizializza.
+let pronte = null;
+const initTabelle = () => {
+  if (!pronte) {
+    pronte = ensureSheetTables(pool).catch((e) => { pronte = null; throw e; });
+  }
+  return pronte;
+};
 
 // Percorso immagine: se non è stato impostato a mano, si usa la convenzione
 // /schede/img/<slug>.jpg — così ti basta caricare i file col nome giusto.
@@ -10,6 +21,7 @@ const conImmagine = (r) => ({ ...r, image_path: r.image_path || `/schede/img/${r
 // autorizzato, oppure autorizzazione nominale. L'admin vede tutto.
 // ---------------------------------------------------------------------------
 const getSheets = async (req, res) => {
+  await initTabelle();
   try {
     if (req.user.role === 'admin') {
       const result = await pool.query(`
@@ -47,6 +59,7 @@ const getSheets = async (req, res) => {
 // GET /api/sheets/:slug/download — verifica il permesso e rimanda al PDF.
 // ---------------------------------------------------------------------------
 const downloadSheet = async (req, res) => {
+  await initTabelle();
   try {
     const result = await pool.query(`
       SELECT s.pdf_path,
@@ -75,6 +88,7 @@ const CAMPI = ['visible_to_all', 'archived', 'blurb', 'difficulty', 'style',
                'role_tag', 'sort_order', 'image_path'];
 
 const updateSheet = async (req, res) => {
+  await initTabelle();
   const set = [], val = [];
   CAMPI.forEach((c) => {
     if (req.body[c] !== undefined) { val.push(req.body[c]); set.push(`${c} = $${val.length}`); }
@@ -94,6 +108,7 @@ const updateSheet = async (req, res) => {
 };
 
 const setSheetGroups = async (req, res) => {
+  await initTabelle();
   const ids = Array.isArray(req.body.group_ids) ? req.body.group_ids : [];
   const client = await pool.connect();
   try {
@@ -116,6 +131,7 @@ const setSheetGroups = async (req, res) => {
 };
 
 const setSheetUsers = async (req, res) => {
+  await initTabelle();
   const ids = Array.isArray(req.body.user_ids) ? req.body.user_ids : [];
   const client = await pool.connect();
   try {
@@ -138,6 +154,7 @@ const setSheetUsers = async (req, res) => {
 };
 
 const bulkVisibility = async (req, res) => {
+  await initTabelle();
   const { ids = [], visible_to_all } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: 'Nessuna scheda selezionata' });
