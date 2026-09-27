@@ -48,6 +48,14 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/quiz"
+          element={
+            <PrivateRoute>
+              <PersonaggiPage autoQuiz />
+            </PrivateRoute>
+          }
+        />
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>
     </BrowserRouter>
