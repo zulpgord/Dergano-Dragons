@@ -4,6 +4,7 @@ import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminPage from './pages/AdminPage';
 import PrivacyPage from './pages/PrivacyPage';
+import PersonaggiPage from './pages/PersonaggiPage';
 import './App.css';
 
 function App() {
@@ -36,6 +37,14 @@ function App() {
           element={
             <PrivateRoute>
               <AdminPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/personaggi"
+          element={
+            <PrivateRoute>
+              <PersonaggiPage />
             </PrivateRoute>
           }
         />
