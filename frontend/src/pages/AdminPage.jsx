@@ -38,7 +38,7 @@ function FillBar({ current, total, height = 7 }) {
 }
 
 // ── Modale dettaglio sessione: lista iscritti + lista d'attesa ─────────────
-function SessionDetailModal({ session, onClose, heroes, onRefresh }) {
+function SessionDetailModal({ session, onClose, heroes, heroesFailed, onReloadHeroes, onRefresh }) {
   const [removingId, setRemovingId] = useState(null);
   const [addUserId, setAddUserId] = useState('');
   const [addSeats, setAddSeats] = useState(1);
@@ -129,8 +129,8 @@ function SessionDetailModal({ session, onClose, heroes, onRefresh }) {
           <p style={{ fontSize: '0.85rem', color: '#8a7f6c', marginBottom: '18px' }}>Nessuno iscritto ancora.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '18px' }}>
-            {assignedUsers.map((u, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text, #262019)' }}>
+            {assignedUsers.map(u => (
+              <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text, #262019)' }}>
                 <span style={{
                   width: '22px', height: '22px', borderRadius: '50%',
                   background: 'rgba(169,121,26,0.14)', border: '1px solid rgba(169,121,26,0.3)',
@@ -155,7 +155,7 @@ function SessionDetailModal({ session, onClose, heroes, onRefresh }) {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {waitingUsers.map((u, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-muted, #6b5a3c)' }}>
+              <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-muted, #6b5a3c)' }}>
                 <span style={{
                   width: '22px', height: '22px', borderRadius: '50%',
                   background: 'rgba(169,121,26,0.10)', border: '1px dashed rgba(169,121,26,0.4)',
@@ -177,7 +177,15 @@ function SessionDetailModal({ session, onClose, heroes, onRefresh }) {
             <p style={{ fontSize: '0.72rem', color: '#6b5a3c', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
               ➕ Iscrivi un eroe manualmente
             </p>
-            {availableHeroes.length === 0 ? (
+            {heroesFailed ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.82rem', color: '#a23b22' }}>Non sono riuscito a caricare l'elenco degli eroi.</span>
+                <button type="button" onClick={onReloadHeroes}
+                  style={{ padding: '5px 12px', borderRadius: '6px', background: 'rgba(179,38,30,0.12)', color: '#a23b22', border: '1px solid rgba(179,38,30,0.35)', cursor: 'pointer', fontWeight: 700, fontSize: '0.78rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+                  🔄 Riprova
+                </button>
+              </div>
+            ) : availableHeroes.length === 0 ? (
               <p style={{ fontSize: '0.82rem', color: '#8a7f6c' }}>Tutti gli eroi sono già iscritti o in attesa per questa sessione.</p>
             ) : (
               <form onSubmit={handleAdd} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -239,11 +247,20 @@ function SessionsSection({ locations }) {
   const [editData, setEditData] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
   const [detailSession, setDetailSession] = useState(null);
+  const [heroesFailed, setHeroesFailed] = useState(false);
+  const [sessionsError, setSessionsError] = useState('');
+
+  const loadHeroes = useCallback(() => {
+    setHeroesFailed(false);
+    adminAPI.getUsers()
+      .then(res => setHeroes(res.data))
+      .catch(() => setHeroesFailed(true));
+  }, []);
 
   useEffect(() => {
     groupsAPI.getGroups().then(res => setGroups(res.data)).catch(() => {});
-    adminAPI.getUsers().then(res => setHeroes(res.data)).catch(() => {});
-  }, []);
+    loadHeroes();
+  }, [loadHeroes]);
 
   useEffect(() => {
     if (locations.length > 0 && !formData.location_id) {
@@ -253,8 +270,9 @@ function SessionsSection({ locations }) {
 
   const loadSessions = useCallback(async () => {
     setSessionsLoading(true);
+    setSessionsError('');
     try { const res = await shiftsAPI.getShifts(); setAllSessions(res.data); }
-    catch { /* silent */ }
+    catch { setSessionsError('Non riesco a caricare le sessioni. Il server potrebbe essersi appena riavviato.'); }
     finally { setSessionsLoading(false); }
   }, []);
 
@@ -580,7 +598,7 @@ function SessionsSection({ locations }) {
 
   return (
     <div>
-      <SessionDetailModal session={detailSession} onClose={() => setDetailSession(null)} heroes={heroes} onRefresh={loadSessions} />
+      <SessionDetailModal session={detailSession} onClose={() => setDetailSession(null)} heroes={heroes} heroesFailed={heroesFailed} onReloadHeroes={loadHeroes} onRefresh={loadSessions} />
 
       {/* ── Crea sessione ── */}
       <div style={cardSty}>
@@ -723,6 +741,16 @@ function SessionsSection({ locations }) {
             ))}
           </div>
         </div>
+
+        {sessionsError && (
+          <div style={{ background: 'rgba(179,38,30,0.10)', border: '1px solid rgba(179,38,30,0.3)', color: '#a23b22', padding: '12px', borderRadius: '8px', marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.85rem' }}>{sessionsError}</span>
+            <button type="button" onClick={loadSessions} disabled={sessionsLoading}
+              style={{ padding: '6px 14px', borderRadius: '7px', background: 'rgba(179,38,30,0.12)', color: '#a23b22', border: '1px solid rgba(179,38,30,0.35)', cursor: sessionsLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', flexShrink: 0, opacity: sessionsLoading ? 0.5 : 1 }}>
+              {sessionsLoading ? '⏳ Riprovo...' : '🔄 Riprova'}
+            </button>
+          </div>
+        )}
 
         {rangeMode === 'trimestre' ? (
           sessionsLoading ? (

@@ -5,7 +5,7 @@ require('dotenv').config();
 
 const register = async (req, res) => {
   const { email, password, name, role, privacy_accepted } = req.body;
-  if (!email || !password || !name) {
+  if (!email || !password || !name || !name.trim()) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
   if (!privacy_accepted) {
@@ -16,7 +16,7 @@ const register = async (req, res) => {
     const userRole = role && role === 'admin' ? 'admin' : 'volunteer';
     const result = await pool.query(
       'INSERT INTO users (email, password_hash, name, role, privacy_accepted_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id, email, name, role',
-      [email, hashedPassword, name, userRole]
+      [email, hashedPassword, name.trim(), userRole]
     );
     const user = result.rows[0];
     const token = jwt.sign(

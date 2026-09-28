@@ -4,7 +4,7 @@ const { pool } = require('../db/database');
 const getUsers = async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC'
+      'SELECT id, email, name, role, created_at FROM users ORDER BY LOWER(name) ASC'
     );
     res.json(result.rows);
   } catch (err) {

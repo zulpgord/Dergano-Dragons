@@ -159,8 +159,8 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
               Avventurieri
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {assignedUsers.map((u, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text, #262019)' }}>
+              {assignedUsers.map(u => (
+                <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text, #262019)' }}>
                   <span style={{
                     width: '22px', height: '22px', borderRadius: '50%',
                     background: 'rgba(169,121,26,0.14)', border: '1px solid rgba(169,121,26,0.3)',
@@ -183,7 +183,7 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {waitingUsers.map((u, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-muted, #6b5a3c)' }}>
+                <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-muted, #6b5a3c)' }}>
                   <span style={{
                     width: '22px', height: '22px', borderRadius: '50%',
                     background: 'rgba(169,121,26,0.10)', border: '1px dashed rgba(169,121,26,0.4)',
