@@ -262,6 +262,7 @@ export default function DashboardPage() {
   const [sessions, setSessions] = useState([]);
   const [userAssignments, setUserAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [slowLoading, setSlowLoading] = useState(false);
   const [error, setError] = useState('');
   const [viewMode, setViewMode] = useState('calendario');
   const [selectedSession, setSelectedSession] = useState(null);
@@ -296,8 +297,13 @@ export default function DashboardPage() {
   }, [viewMode]);
 
   const loadSessions = async (silent = false) => {
+    let slowTimer;
     try {
-      if (!silent) setLoading(true);
+      if (!silent) {
+        setLoading(true);
+        setError('');
+        slowTimer = setTimeout(() => setSlowLoading(true), 4000);
+      }
       const [sessRes, assignRes] = await Promise.all([
         shiftsAPI.getShifts(),
         assignmentsAPI.getUserAssignments(),
@@ -305,9 +311,15 @@ export default function DashboardPage() {
       setSessions(sessRes.data);
       setUserAssignments(assignRes.data);
     } catch (err) {
-      setError('Errore nel caricamento');
+      setError(err.response
+        ? 'Errore nel caricamento delle sessioni.'
+        : 'Non riesco a contattare il server. Potrebbe essersi appena riavviato: riprova tra qualche secondo.');
     } finally {
-      if (!silent) setLoading(false);
+      clearTimeout(slowTimer);
+      if (!silent) {
+        setLoading(false);
+        setSlowLoading(false);
+      }
     }
   };
 
@@ -509,14 +521,27 @@ export default function DashboardPage() {
         </div>
 
         {error && (
-          <div style={{ background: 'rgba(179,38,30,0.10)', border: '1px solid rgba(179,38,30,0.3)', color: '#a23b22', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
-            {error}
+          <div style={{ background: 'rgba(179,38,30,0.10)', border: '1px solid rgba(179,38,30,0.3)', color: '#a23b22', padding: '12px', borderRadius: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+            <span>{error}</span>
+            <button
+              onClick={() => loadSessions()}
+              disabled={loading}
+              style={{ padding: '7px 16px', borderRadius: '8px', background: 'rgba(179,38,30,0.12)', color: '#a23b22', border: '1px solid rgba(179,38,30,0.35)', cursor: loading ? 'default' : 'pointer', fontWeight: 700, fontSize: '0.82rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', flexShrink: 0, opacity: loading ? 0.5 : 1 }}
+            >
+              {loading ? '⏳ Riprovo...' : '🔄 Riprova'}
+            </button>
           </div>
         )}
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '64px', color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
-            ⏳ Caricamento...
+            <div>⏳ Caricamento...</div>
+            {slowLoading && (
+              <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#8a7f6c', maxWidth: '360px', margin: '10px auto 0', lineHeight: 1.5 }}>
+                🐉 Il drago si sta svegliando — il server riparte dopo un periodo di inattività.
+                Possono volerci fino a un minuto: sto già riprovando da solo.
+              </div>
+            )}
           </div>
         ) : (
           <>

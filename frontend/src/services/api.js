@@ -6,6 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 20000,
 });
 
 // Add token to requests
@@ -15,6 +16,27 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+});
+
+// Il backend viene sospeso dopo pochi minuti di inattività: il primo accesso
+// dopo una pausa richiede ~30-60s di riavvio, durante i quali le richieste
+// vanno in timeout o rispondono 502/503. Ritentiamo solo le GET: ripetere una
+// POST creerebbe iscrizioni doppie.
+const MAX_RETRIES = 3;
+const WAKE_UP_STATUS = [502, 503, 504];
+
+api.interceptors.response.use(undefined, async (error) => {
+  const config = error.config;
+  if (!config || config.method !== 'get') return Promise.reject(error);
+
+  const serverAsleep = !error.response || WAKE_UP_STATUS.includes(error.response.status);
+  if (!serverAsleep) return Promise.reject(error);
+
+  config.__retryCount = (config.__retryCount || 0) + 1;
+  if (config.__retryCount > MAX_RETRIES) return Promise.reject(error);
+
+  await new Promise(resolve => setTimeout(resolve, 1000 * 2 ** (config.__retryCount - 1)));
+  return api(config);
 });
 
 // Auth endpoints
