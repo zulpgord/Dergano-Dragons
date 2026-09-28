@@ -1,0 +1,36 @@
+name: Deploy Backend to Render
+
+# Il webhook nativo GitHub -> Render non consegna piu' gli eventi di push:
+# la configurazione Render e' corretta (autoDeploy attivo, branch main) ma i
+# commit non arrivano, quindi il backend restava indietro rispetto al codice.
+# Questo workflow chiama direttamente il Deploy Hook di Render.
+#
+# Si attiva solo quando cambia il backend: ogni deploy riavvia il servizio e
+# un riavvio significa attesa da cold start per chi sta usando l'app.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Richiedi il deploy a Render
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::Manca il secret RENDER_DEPLOY_HOOK. Impostalo in Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          CODE=$(curl -sS -X POST -o /dev/null -w '%{http_code}' "$HOOK")
+          if [ "$CODE" != "200" ] && [ "$CODE" != "201" ]; then
+            echo "::error::Render ha risposto HTTP $CODE: deploy non avviato."
+            exit 1
+          fi
+          echo "Deploy richiesto correttamente a Render (HTTP $CODE)."
