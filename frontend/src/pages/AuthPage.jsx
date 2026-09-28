@@ -39,6 +39,9 @@ export default function AuthPage() {
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sessionExpired] = useState(
+    () => new URLSearchParams(window.location.search).get('sessione') === 'scaduta'
+  );
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -145,6 +148,20 @@ export default function AuthPage() {
         }}>
           {isLogin ? '⚔️ Entra nella Gilda' : '📜 Registra il tuo Eroe'}
         </h2>
+
+        {sessionExpired && !error && (
+          <div style={{
+            background: 'rgba(169,121,26,0.12)',
+            border: '1px solid rgba(169,121,26,0.35)',
+            color: '#8a6a14',
+            padding: '10px 14px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            fontSize: '0.88rem',
+          }}>
+            ⏳ La tua sessione è scaduta. Accedi di nuovo per continuare.
+          </div>
+        )}
 
         {error && (
           <div style={{

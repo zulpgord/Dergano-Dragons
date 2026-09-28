@@ -27,6 +27,21 @@ const WAKE_UP_STATUS = [502, 503, 504];
 
 api.interceptors.response.use(undefined, async (error) => {
   const config = error.config;
+
+  // Il token dura 7 giorni. Alla scadenza resta comunque salvato, quindi
+  // PrivateRoute continua a far entrare: l'app sembra ancora autenticata ma
+  // ogni richiesta risponde 401, e l'utente resta bloccato su un errore di
+  // caricamento senza capire che deve solo rifare l'accesso.
+  // Le chiamate a /auth sono escluse: li' un 401 e' "credenziali errate".
+  if (error.response?.status === 401 && !config?.url?.includes('/auth/')) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    if (!window.location.pathname.startsWith('/auth')) {
+      window.location.replace('/auth?sessione=scaduta');
+    }
+    return Promise.reject(error);
+  }
+
   if (!config || config.method !== 'get') return Promise.reject(error);
 
   const serverAsleep = !error.response || WAKE_UP_STATUS.includes(error.response.status);
