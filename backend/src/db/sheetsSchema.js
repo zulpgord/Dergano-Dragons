@@ -72,6 +72,15 @@ const SCHEDE = [
   ['chalithra-velsarn', 'Chalithra Vel\u2019Sarn', 'Ladro', 'Elfo Oscuro (drow)', 'Furtivit\u00e0', 'difficile', 'power',
     'Vede al buio a trentasei metri. Alla luce del sole, molto meno.',
     '/schede/PG_19_Chalithra_VelSarn_ladro_drow.pdf'],
+  ['gudrun-scoppiaroccia', 'Gudrun Scoppiaroccia', 'Stregone', 'Nano delle Colline', 'Area', 'media', 'goofy',
+    'Minatrice diventata eroina per sbaglio: la sua magia selvaggia ha salvato quarantaquattro persone e ne ha quasi seppellite altre due.',
+    '/schede/PG_20_Gudrun_Scoppiaroccia_stregone_nano.pdf'],
+  ['malvern-pattodolce', 'Malvern Pattodolce', 'Warlock', 'Mezzelfo', 'Distanza', 'media', 'power',
+    'Ha letto ogni clausola del contratto con il diavolo. Poi ne ha scritte otto nuove, e il diavolo ha firmato.',
+    '/schede/PG_21_Malvern_Pattodolce_warlock_mezzelfo.pdf'],
+  ['surina-rombocorno', 'Surina Rombocorno', 'Bardo', 'Dragonide di bronzo', 'Controllo', 'media', 'power',
+    'Suona un corno pi\u00f9 lungo del suo braccio, respira fulmini e cerca il resto di una canzone perduta.',
+    '/schede/PG_22_Surina_Rombocorno_bardo_dragonide.pdf'],
 ];
 
 async function ensureSheetTables(db) {
