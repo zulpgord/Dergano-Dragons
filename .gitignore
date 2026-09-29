@@ -1,0 +1,24 @@
+# Dipendenze
+node_modules/
+
+# Output di build (rigenerato da `npm run build`)
+dist/
+build/
+
+# Variabili d'ambiente: non committare mai credenziali
+.env
+.env.local
+.env.*.local
+
+# Log
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# File di sistema
+.DS_Store
+Thumbs.db
+
+# Cartelle degli editor
+.vscode/
+.idea/
