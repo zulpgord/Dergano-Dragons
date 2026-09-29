@@ -22,7 +22,7 @@ const register = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
     res.status(201).json({ message: 'User registered successfully', token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
   } catch (err) {
@@ -48,7 +48,7 @@ const login = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '30d' }
     );
     res.json({ message: 'Login successful', token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
   } catch (err) {
