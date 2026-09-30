@@ -33,7 +33,6 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [showReset, setShowReset] = useState(false);
-  const [resetForm, setResetForm] = useState({ email: '', newPassword: '' });
   const [showPwd, setShowPwd] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '', name: '' });
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
@@ -46,18 +45,6 @@ export default function AuthPage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleReset = async (e) => {
-    e.preventDefault();
-    try {
-      await authAPI.resetPassword(resetForm.email, resetForm.newPassword);
-      alert('✅ Password reimpostata con successo!');
-      setShowReset(false);
-      setResetForm({ email: '', newPassword: '' });
-    } catch (err) {
-      alert(err.response?.data?.error || 'Errore nel reset della password');
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -275,20 +262,14 @@ export default function AuthPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
         }}>
           <div style={{ ...cardStyle, maxWidth: '340px' }}>
-            <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', marginBottom: '16px' }}>🔑 Reimposta password</h3>
-            <form onSubmit={handleReset} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <input type="email" placeholder="Email" value={resetForm.email}
-                onChange={e => setResetForm(p => ({ ...p, email: e.target.value }))}
-                required style={inputStyle} />
-              <input type="password" placeholder="Nuova password (min 6 caratteri)" value={resetForm.newPassword}
-                onChange={e => setResetForm(p => ({ ...p, newPassword: e.target.value }))}
-                required minLength={6} style={inputStyle} />
-              <button type="submit" style={btnStyle}>Reimposta</button>
-              <button type="button" onClick={() => setShowReset(false)}
-                style={{ ...btnStyle, background: 'transparent', color: '#6b5a3c', border: '1px solid #ddd0b3', boxShadow: 'none' }}>
-                Annulla
-              </button>
-            </form>
+            <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', marginBottom: '16px' }}>🔑 Password dimenticata?</h3>
+            <p style={{ color: '#6b5a3c', fontSize: '0.9rem', lineHeight: 1.55, marginBottom: '16px' }}>
+              Per proteggere il tuo account, la password non si reimposta da questa pagina.
+              Scrivi all'organizzazione della gilda: un amministratore la reimposterà per te.
+            </p>
+            <button type="button" onClick={() => setShowReset(false)} style={btnStyle}>
+              Ho capito
+            </button>
           </div>
         </div>
       )}

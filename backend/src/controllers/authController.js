@@ -92,23 +92,6 @@ const updateUserRole = async (req, res) => {
   }
 };
 
-const resetPassword = async (req, res) => {
-  const { email, newPassword } = req.body;
-  if (!email || !newPassword) return res.status(400).json({ error: 'Email e nuova password richieste' });
-  if (newPassword.length < 6) return res.status(400).json({ error: 'La password deve essere di almeno 6 caratteri' });
-  try {
-    const result = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Nessun account trovato con questa email' });
-    }
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await pool.query('UPDATE users SET password_hash = $1 WHERE email = $2', [hashedPassword, email]);
-    res.json({ message: 'Password reimpostata con successo' });
-  } catch (err) {
-    console.error('Reset password error:', err);
-    res.status(500).json({ error: 'Errore nel reset della password' });
-  }
-};
 
 // Cancellazione account self-service (diritto alla cancellazione).
 // Elimina l'utente e, in cascata, le sue iscrizioni e appartenenze ai gruppi.
@@ -123,4 +106,4 @@ const deleteMyAccount = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getUsers, updateUserRole, resetPassword, deleteMyAccount };
+module.exports = { register, login, getUsers, updateUserRole, deleteMyAccount };
