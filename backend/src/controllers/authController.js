@@ -57,21 +57,6 @@ const login = async (req, res) => {
   }
 };
 
-const makeAdmin = async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email required' });
-  try {
-    const result = await pool.query(
-      'UPDATE users SET role = $1 WHERE email = $2 RETURNING id, email, name, role',
-      ['admin', email]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-    res.json({ message: 'User promoted to admin', user: result.rows[0] });
-  } catch (err) {
-    console.error('Make admin error:', err);
-    res.status(500).json({ error: 'Failed to update role' });
-  }
-};
 
 const getUsers = async (req, res) => {
   try {
@@ -138,4 +123,4 @@ const deleteMyAccount = async (req, res) => {
   }
 };
 
-module.exports = { register, login, makeAdmin, getUsers, updateUserRole, resetPassword, deleteMyAccount };
+module.exports = { register, login, getUsers, updateUserRole, resetPassword, deleteMyAccount };
