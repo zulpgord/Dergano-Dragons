@@ -283,8 +283,7 @@ export default function DashboardPage() {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
-  const [calendarRevealed, setCalendarRevealed] = useState(false);
-  const [partyImg, setPartyImg] = useState('sx');
+  const [calendarRevealed, setCalendarRevealed] = useState(() => { try { return localStorage.getItem('dg_art_seen') === '1'; } catch { return true; } });
   const [showAccount, setShowAccount] = useState(false);
 
   useEffect(() => {
@@ -292,19 +291,15 @@ export default function DashboardPage() {
     loadSessions();
   }, []);
 
-  // Ogni volta che si apre la vista Calendario (mobile): alterna il party art
-  // sx/dx come schermata di benvenuto, da toccare per rivelare il calendario.
-  useEffect(() => {
-    if (viewMode === 'calendario') {
-      setCalendarRevealed(false);
-      setPartyImg(prev => {
-        const last = localStorage.getItem('dg_party_img');
-        const next = last === 'sx' ? 'dx' : 'sx';
-        localStorage.setItem('dg_party_img', next);
-        return next;
-      });
-    }
-  }, [viewMode]);
+  // Le illustrazioni del party si vedono solo alla prima apertura dell'app: poi resta solo il calendario.
+  const [showArt, setShowArt] = useState(() => {
+    try { return localStorage.getItem('dg_art_seen') !== '1'; } catch { return false; }
+  });
+  const hideArt = () => {
+    setShowArt(false);
+    setCalendarRevealed(true);
+    try { localStorage.setItem('dg_art_seen', '1'); } catch { /* ignora */ }
+  };
 
   const loadSessions = async (silent = false) => {
     let slowTimer;
@@ -561,17 +556,20 @@ export default function DashboardPage() {
         ) : (
           <>
             {/* ── CALENDARIO ── */}
-            {viewMode === 'calendario' && !calendarRevealed && (
-              <div className="mobile-party-splash" onClick={() => setCalendarRevealed(true)}>
-                <img src={partyImg === 'sx' ? '/party-sx.jpg' : '/party-dx.jpg'} alt="" />
+            {viewMode === 'calendario' && showArt && !calendarRevealed && (
+              <div className="mobile-party-splash" onClick={hideArt}>
+                <img src="/party-sx.jpg" alt="" />
                 <div className="mobile-party-splash-caption">⚔️ Clicca qui per aprire il calendario</div>
               </div>
             )}
             {viewMode === 'calendario' && (
-              <div className={`calendar-with-art ${!calendarRevealed ? 'calendar-hide-mobile' : ''}`}>
-                <div className="calendar-side-art-wrap">
-                  <img src="/party-sx.jpg" alt="" className="calendar-side-art" />
-                </div>
+              <div className={`calendar-with-art ${showArt && !calendarRevealed ? 'calendar-hide-mobile' : ''}`}>
+                {showArt && (
+                  <div className="calendar-side-art-wrap">
+                    <img src="/party-sx.jpg" alt="" className="calendar-side-art" />
+                    <button type="button" className="calendar-art-close" onClick={hideArt} aria-label="Chiudi le illustrazioni" title="Chiudi">✕</button>
+                  </div>
+                )}
                 <div style={{ flex: 1, minWidth: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', marginBottom: '4px' }}>
                   {DAYS_IT.map(d => (
@@ -656,9 +654,12 @@ export default function DashboardPage() {
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginLeft: 'auto', fontStyle: 'italic' }}>Clicca una sessione per aprirla</span>
                 </div>
                 </div>
-                <div className="calendar-side-art-wrap">
-                  <img src="/party-dx.jpg" alt="" className="calendar-side-art" />
-                </div>
+                {showArt && (
+                  <div className="calendar-side-art-wrap">
+                    <img src="/party-dx.jpg" alt="" className="calendar-side-art" />
+                    <button type="button" className="calendar-art-close" onClick={hideArt} aria-label="Chiudi le illustrazioni" title="Chiudi">✕</button>
+                  </div>
+                )}
               </div>
             )}
 
