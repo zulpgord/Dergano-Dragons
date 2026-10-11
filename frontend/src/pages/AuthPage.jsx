@@ -36,6 +36,10 @@ export default function AuthPage() {
   const [showPwd, setShowPwd] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '', name: '' });
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [newsletter, setNewsletter] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetMsg, setResetMsg] = useState(null);
+  const [resetLoading, setResetLoading] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionExpired] = useState(
@@ -61,7 +65,7 @@ export default function AuthPage() {
           setLoading(false);
           return;
         }
-        response = await authAPI.register(formData.email, formData.password, formData.name, privacyAccepted);
+        response = await authAPI.register(formData.email, formData.password, formData.name, privacyAccepted, newsletter);
       }
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -224,6 +228,17 @@ export default function AuthPage() {
               </span>
             </label>
           )}
+          {!isLogin && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.82rem', color: 'var(--text-muted, #6b5a3c)', cursor: 'pointer', lineHeight: 1.4 }}>
+              <input
+                type="checkbox"
+                checked={newsletter}
+                onChange={e => setNewsletter(e.target.checked)}
+                style={{ marginTop: '2px', width: '15px', height: '15px', accentColor: '#b0801a', flexShrink: 0 }}
+              />
+              <span>Voglio ricevere la newsletter con le novità e le nuove sessioni (facoltativo, puoi cambiare idea quando vuoi).</span>
+            </label>
+          )}
           <button type="submit" disabled={loading || (!isLogin && !privacyAccepted)} style={{ ...btnStyle, opacity: (!isLogin && !privacyAccepted) ? 0.5 : 1 }}>
             {loading ? '⏳ Caricamento...' : isLogin ? '⚔️ Entra' : '📜 Registrati'}
           </button>
@@ -241,14 +256,14 @@ export default function AuthPage() {
           {isLogin && (
             <button
               type="button"
-              onClick={() => setShowReset(true)}
+              onClick={() => { setResetEmail(formData.email); setResetMsg(null); setShowReset(true); }}
               style={{
                 display: 'block', width: '100%', marginTop: '10px',
                 background: 'none', border: 'none', color: '#8a7f6c',
                 cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline',
               }}
             >
-              🔑 Reimposta password
+              🔑 Password dimenticata?
             </button>
           )}
         </div>
@@ -263,13 +278,37 @@ export default function AuthPage() {
         }}>
           <div style={{ ...cardStyle, maxWidth: '340px' }}>
             <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', marginBottom: '16px' }}>🔑 Password dimenticata?</h3>
-            <p style={{ color: '#6b5a3c', fontSize: '0.9rem', lineHeight: 1.55, marginBottom: '16px' }}>
-              Per proteggere il tuo account, la password non si reimposta da questa pagina.
-              Scrivi all'organizzazione della gilda: un amministratore la reimposterà per te.
-            </p>
-            <button type="button" onClick={() => setShowReset(false)} style={btnStyle}>
-              Ho capito
-            </button>
+            {resetMsg?.ok ? (
+              <>
+                <p style={{ color: '#6b5a3c', fontSize: '0.9rem', lineHeight: 1.55, marginBottom: '16px' }}>{resetMsg.text}</p>
+                <p style={{ color: '#8a7f6c', fontSize: '0.8rem', lineHeight: 1.5, marginBottom: '16px' }}>Controlla anche lo spam. Il link vale un’ora.</p>
+                <button type="button" onClick={() => setShowReset(false)} style={btnStyle}>Ho capito</button>
+              </>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setResetLoading(true);
+                  try {
+                    const r = await authAPI.forgotPassword(resetEmail);
+                    setResetMsg({ ok: true, text: r.data.message });
+                  } catch (err) {
+                    setResetMsg({ ok: false, text: err.response?.data?.error || 'Invio non riuscito, riprova' });
+                  } finally {
+                    setResetLoading(false);
+                  }
+                }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+              >
+                <p style={{ color: '#6b5a3c', fontSize: '0.9rem', lineHeight: 1.55 }}>
+                  Scrivi l’email con cui ti sei registrato: ti mandiamo un link per scegliere una nuova password.
+                </p>
+                <input type="email" required placeholder="Email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} style={inputStyle} autoFocus />
+                {resetMsg && !resetMsg.ok && <p style={{ color: '#a23b22', fontSize: '0.85rem' }}>{resetMsg.text}</p>}
+                <button type="submit" disabled={resetLoading} style={btnStyle}>{resetLoading ? '⏳ Invio...' : 'Mandami il link'}</button>
+                <button type="button" onClick={() => setShowReset(false)} style={{ background: 'none', border: 'none', color: '#8a7f6c', cursor: 'pointer', fontSize: '0.85rem' }}>Annulla</button>
+              </form>
+            )}
           </div>
         </div>
       )}

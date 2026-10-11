@@ -1,4 +1,6 @@
 const { pool } = require('../db/database');
+const { sendEmail } = require('../utils/emailService');
+const { FRONTEND_URL, renderMail } = require('../utils/mailTemplate');
 
 // Get all shifts — uses parallel queries instead of N+1.
 // Gli eroi vedono solo sessioni pubbliche o del proprio gruppo; l'admin vede tutto.
@@ -179,4 +181,40 @@ const deleteShift = async (req, res) => {
   }
 };
 
-module.exports = { getShifts, createShift, updateShift, cancelShift, deleteShift };
+// Avviso agli iscritti di una sessione (e, se richiesto, alla lista d'attesa). Invii individuali.
+const emailShiftParticipants = async (req, res) => {
+  const { subject, message, include_waiting } = req.body;
+  if (!subject?.trim() || !message?.trim()) return res.status(400).json({ error: 'Oggetto e messaggio sono obbligatori' });
+  try {
+    const shift = await pool.query(
+      'SELECT s.start_time, l.name AS location_name FROM shifts s JOIN locations l ON s.location_id = l.id WHERE s.id = $1',
+      [req.params.id]
+    );
+    if (!shift.rows[0]) return res.status(404).json({ error: 'Sessione non trovata' });
+    const statuses = include_waiting ? ['assigned', 'waiting'] : ['assigned'];
+    const { rows } = await pool.query(
+      `SELECT DISTINCT u.email, u.name FROM assignments a JOIN users u ON u.id = a.user_id
+       WHERE a.shift_id = $1 AND a.status = ANY($2)`,
+      [req.params.id, statuses]
+    );
+    if (rows.length === 0) return res.status(400).json({ error: 'Nessun iscritto a questa sessione' });
+    const when = new Date(shift.rows[0].start_time).toLocaleString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+    const results = [];
+    for (const u of rows) {
+      const { html, text } = renderMail({
+        greeting: `Ciao ${u.name},`,
+        body: message.trim(),
+        button: { label: 'Vedi le tue sessioni', url: `${FRONTEND_URL}/dashboard` },
+        footer: `Ricevi questa email perché sei iscritto alla sessione di ${when} · ${shift.rows[0].location_name}.`,
+      });
+      results.push(!!(await sendEmail(u.email, subject.trim(), text, html)));
+    }
+    const sent = results.filter(Boolean).length;
+    res.json({ message: 'Invio completato', sent, failed: results.length - sent, total: results.length });
+  } catch (err) {
+    console.error('Email shift participants error:', err);
+    res.status(500).json({ error: 'Invio non riuscito' });
+  }
+};
+
+module.exports = { getShifts, createShift, updateShift, cancelShift, deleteShift, emailShiftParticipants };

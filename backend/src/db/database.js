@@ -153,6 +153,19 @@ async function initializeDatabase() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS privacy_accepted_at TIMESTAMP DEFAULT NULL;
     `);
 
+    // Migration: recupero password con link monouso (nel DB resta solo l'hash del token)
+    // e consenso separato alla newsletter, revocabile dal link in ogni email.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS password_resets (
+        token_hash CHAR(64) PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expires_at TIMESTAMP NOT NULL,
+        used_at TIMESTAMP DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS newsletter_opt_in BOOLEAN NOT NULL DEFAULT FALSE;
+    `);
+
     // Migration: contenuti testuali editabili dall'admin (es. informativa privacy)
     // senza dover ripubblicare il codice — chiave/valore generico, riusabile in futuro.
     await client.query(`

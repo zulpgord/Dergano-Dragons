@@ -209,6 +209,119 @@ function SessionDetailModal({ session, onClose, heroes, heroesFailed, onReloadHe
             )}
           </div>
         )}
+        {(assignedUsers.length > 0 || waitingUsers.length > 0) && (
+          <ShiftEmailBox sessionId={session.id} assigned={assignedUsers.length} waiting={waitingUsers.length} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Avviso via email agli iscritti di una sessione (ognuno riceve la sua email).
+function ShiftEmailBox({ sessionId, assigned, waiting }) {
+  const [open, setOpen] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [includeWaiting, setIncludeWaiting] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+  const count = assigned + (includeWaiting ? waiting : 0);
+
+  const send = async (e) => {
+    e.preventDefault();
+    if (!confirm(`Inviare l’email a ${count} ${count === 1 ? 'persona' : 'persone'}?`)) return;
+    setSending(true);
+    setResult(null);
+    try {
+      const r = await shiftsAPI.emailParticipants(sessionId, subject, message, includeWaiting);
+      setResult({ ok: true, text: `✓ Inviata a ${r.data.sent} su ${r.data.total}${r.data.failed ? ` (${r.data.failed} non riuscite)` : ''}` });
+      setSubject(''); setMessage('');
+    } catch (err) {
+      setResult({ ok: false, text: err.response?.data?.error || 'Invio non riuscito' });
+    } finally { setSending(false); }
+  };
+
+  const field = { width: '100%', padding: '8px 10px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '16px', boxSizing: 'border-box', fontFamily: 'inherit' };
+  return (
+    <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+      {!open ? (
+        <button type="button" onClick={() => setOpen(true)}
+          style={{ padding: '8px 14px', background: 'rgba(169,121,26,0.12)', color: '#b0801a', border: '1px solid rgba(169,121,26,0.35)', borderRadius: '7px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+          📧 Scrivi agli iscritti
+        </button>
+      ) : (
+        <form onSubmit={send} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <p style={{ fontSize: '0.75rem', color: '#6b5a3c', letterSpacing: '1px', textTransform: 'uppercase', margin: 0, fontWeight: 700 }}>📧 Scrivi agli iscritti</p>
+          <input placeholder="Oggetto (es. Cambio orario)" value={subject} onChange={e => setSubject(e.target.value)} required style={field} />
+          <textarea placeholder="Messaggio" rows={4} value={message} onChange={e => setMessage(e.target.value)} required style={field} />
+          {waiting > 0 && (
+            <label style={{ fontSize: '0.82rem', color: '#6b5a3c', display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <input type="checkbox" checked={includeWaiting} onChange={e => setIncludeWaiting(e.target.checked)} style={{ accentColor: '#b0801a' }} />
+              Anche alla lista d’attesa ({waiting})
+            </label>
+          )}
+          {result && <p style={{ fontSize: '0.82rem', margin: 0, color: result.ok ? '#2b6663' : '#a23b22' }}>{result.text}</p>}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button type="submit" disabled={sending}
+              style={{ flex: 1, padding: '9px', background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', opacity: sending ? 0.6 : 1, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+              {sending ? 'Invio...' : `Invia a ${count}`}
+            </button>
+            <button type="button" onClick={() => { setOpen(false); setResult(null); }}
+              style={{ padding: '9px 14px', background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #ddd0b3', borderRadius: '7px', cursor: 'pointer' }}>Chiudi</button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sezione: Newsletter (solo a chi ha dato il consenso)
+// ═══════════════════════════════════════════════════════════════════════════════
+function NewsletterSection() {
+  const [stats, setStats] = useState(null);
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+
+  useEffect(() => { adminAPI.getNewsletterStats().then(r => setStats(r.data)).catch(() => {}); }, []);
+
+  const send = async (test) => {
+    if (!subject.trim() || !message.trim()) return setResult({ ok: false, text: 'Scrivi oggetto e messaggio' });
+    if (!test && !confirm(`Inviare la newsletter a ${stats?.subscribed ?? '?'} iscritti?`)) return;
+    setSending(true);
+    setResult(null);
+    try {
+      const r = await adminAPI.sendNewsletter(subject, message, test);
+      setResult({ ok: true, text: test ? '✓ Prova inviata alla tua email' : `✓ Inviata a ${r.data.sent} su ${r.data.total}${r.data.failed ? ` (${r.data.failed} non riuscite)` : ''}` });
+      if (!test) { setSubject(''); setMessage(''); }
+    } catch (err) {
+      setResult({ ok: false, text: err.response?.data?.error || 'Invio non riuscito' });
+    } finally { setSending(false); }
+  };
+
+  const field = { width: '100%', padding: '9px 12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '16px', boxSizing: 'border-box', fontFamily: 'inherit' };
+  const btn = { padding: '10px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', opacity: sending ? 0.6 : 1 };
+  return (
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', maxWidth: '640px' }}>
+      <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 6px', fontSize: '1.05rem' }}>📜 Newsletter</h2>
+      <p style={{ fontSize: '0.82rem', color: '#6b5a3c', margin: '0 0 16px', lineHeight: 1.5 }}>
+        {stats ? <><strong>{stats.subscribed}</strong> iscritti su {stats.total} hanno scelto di riceverla. </> : null}
+        Parte solo a chi ha dato il consenso; ogni email ha il link per disiscriversi.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <input placeholder="Oggetto" value={subject} onChange={e => setSubject(e.target.value)} style={field} />
+        <textarea placeholder="Messaggio (es. le sessioni del prossimo mese)" rows={8} value={message} onChange={e => setMessage(e.target.value)} style={field} />
+        {result && <p style={{ fontSize: '0.85rem', margin: 0, color: result.ok ? '#2b6663' : '#a23b22' }}>{result.text}</p>}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button type="button" disabled={sending} onClick={() => send(true)} style={{ ...btn, background: 'rgba(169,121,26,0.12)', color: '#b0801a', border: '1px solid rgba(169,121,26,0.35)' }}>
+            Mandami una prova
+          </button>
+          <button type="button" disabled={sending || !stats?.subscribed} onClick={() => send(false)} style={{ ...btn, flex: 1, background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a' }}>
+            {sending ? 'Invio...' : `Invia a ${stats?.subscribed ?? 0} iscritti`}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -867,7 +980,7 @@ function HeroesSection() {
   };
 
   const openReset = (hero) => { setResetHero(hero); setNewPwd(''); setShowPwd(false); setPwdDone(false); };
-  const closeReset = () => { setResetHero(null); setNewPwd(''); setPwdDone(false); };
+  const closeReset = () => { setResetHero(null); setNewPwd(''); setPwdDone(false); setLinkMsg(null); };
 
   const openRename = (hero) => { setRenameHero(hero); setNewName(hero.name); };
   const closeRename = () => { setRenameHero(null); setNewName(''); };
@@ -891,6 +1004,19 @@ function HeroesSection() {
     for (let i = 0; i < 10; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
     setNewPwd(pwd);
     setShowPwd(true);
+  };
+
+  const [linkMsg, setLinkMsg] = useState(null);
+  const [sendingLink, setSendingLink] = useState(false);
+  const handleSendLink = async () => {
+    setSendingLink(true);
+    setLinkMsg(null);
+    try {
+      const r = await adminAPI.sendResetLink(resetHero.id);
+      setLinkMsg({ ok: true, text: r.data.message });
+    } catch (err) {
+      setLinkMsg({ ok: false, text: err.response?.data?.error || 'Invio non riuscito' });
+    } finally { setSendingLink(false); }
   };
 
   const handleResetPwd = async (e) => {
@@ -993,6 +1119,15 @@ function HeroesSection() {
                 </button>
               </div>
             ) : (
+              <>
+              <button type="button" onClick={handleSendLink} disabled={sendingLink || linkMsg?.ok}
+                style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, cursor: 'pointer', opacity: sendingLink ? 0.6 : 1 }}>
+                {sendingLink ? 'Invio...' : linkMsg?.ok ? '✓ Link inviato' : '📧 Manda link via email (consigliato)'}
+              </button>
+              <p style={{ fontSize: '0.78rem', margin: '6px 0 14px', color: linkMsg && !linkMsg.ok ? '#a23b22' : '#8a7f6c' }}>
+                {linkMsg ? linkMsg.text : 'Riceverà un link valido un’ora per scegliere da solo la nuova password.'}
+              </p>
+              <p style={{ fontSize: '0.75rem', color: '#8a7f6c', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Oppure impostala tu</p>
               <form onSubmit={handleResetPwd} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ position: 'relative' }}>
                   <input
@@ -1024,6 +1159,7 @@ function HeroesSection() {
                   </button>
                 </div>
               </form>
+              </>
             )}
           </div>
         </div>
@@ -1542,6 +1678,7 @@ export default function AdminPage() {
     { id: 'statistiche', label: '📊 Statistiche' },
     { id: 'locations', label: '📍 Locations' },
     { id: 'gruppi', label: '👥 Gruppi' },
+    { id: 'newsletter', label: '📜 Newsletter' },
     { id: 'privacy', label: '📄 Privacy' },
     { id: 'schede', label: '🎭 Schede' },
   ];
@@ -1574,6 +1711,7 @@ export default function AdminPage() {
         {tab === 'statistiche' && <StatsSection />}
         {tab === 'locations' && <LocationsSection />}
         {tab === 'gruppi' && <GroupsSection />}
+        {tab === 'newsletter' && <NewsletterSection />}
         {tab === 'privacy' && <PrivacyEditorSection />}
         {tab === 'schede' && <SchedeAdminTab />}
       </main>

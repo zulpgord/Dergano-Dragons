@@ -1,4 +1,8 @@
+const jwt = require('jsonwebtoken');
 const { pool } = require('../db/database');
+const { sendEmail } = require('../utils/emailService');
+const { sendResetEmail } = require('../utils/passwordReset');
+const { FRONTEND_URL, renderMail } = require('../utils/mailTemplate');
 
 // Get all users (admin only)
 const getUsers = async (req, res) => {
@@ -64,7 +68,7 @@ const resetUserPassword = async (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
   try {
-    const bcrypt = require('bcryptjs');
+    const bcrypt = require('bcrypt');
     const hash = await bcrypt.hash(new_password, 10);
     const result = await pool.query(
       'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
@@ -158,4 +162,65 @@ const fixFutureShifts = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, updateUserRole, updateUserName, resetUserPassword, getStats, getShiftStats, fixFutureShifts };
+// L'admin manda a un iscritto il link per scegliere una nuova password (non la vede ne' la sceglie lui).
+const sendUserResetLink = async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT id, name, email FROM users WHERE id = $1', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'User not found' });
+    const admin = await pool.query('SELECT name FROM users WHERE id = $1', [req.user.id]);
+    const r = await sendResetEmail(rows[0], admin.rows[0]?.name || 'Un organizzatore');
+    if (r === 'limit') return res.status(429).json({ error: 'Già inviati 3 link nell’ultima ora a questo utente' });
+    if (r === 'error') return res.status(502).json({ error: 'Invio email non riuscito' });
+    res.json({ message: `Link inviato a ${rows[0].email}` });
+  } catch (err) {
+    console.error('Send reset link error:', err);
+    res.status(500).json({ error: 'Invio non riuscito' });
+  }
+};
+
+// Newsletter: solo a chi ha dato il consenso. Ogni email ha il proprio link di disiscrizione.
+// Con test=true va solo all'admin che la sta scrivendo, per vedere l'anteprima.
+const sendNewsletter = async (req, res) => {
+  const { subject, message, test } = req.body;
+  if (!subject?.trim() || !message?.trim()) return res.status(400).json({ error: 'Oggetto e messaggio sono obbligatori' });
+  try {
+    const { rows } = test
+      ? await pool.query('SELECT id, name, email FROM users WHERE id = $1', [req.user.id])
+      : await pool.query('SELECT id, name, email FROM users WHERE newsletter_opt_in = TRUE ORDER BY id');
+    if (rows.length === 0) return res.status(400).json({ error: 'Nessun iscritto ha ancora accettato la newsletter' });
+    const apiBase = `${req.protocol}://${req.get('host')}`;
+    const results = [];
+    // In sequenza, per restare comodi nei limiti di Brevo.
+    for (const u of rows) {
+      const token = jwt.sign({ id: u.id, purpose: 'unsubscribe' }, process.env.JWT_SECRET);
+      const unsub = `${apiBase}/api/auth/unsubscribe?token=${encodeURIComponent(token)}`;
+      const { html, text } = renderMail({
+        greeting: `Ciao ${u.name},`,
+        body: message.trim(),
+        button: { label: 'Apri Dergano & Dragons', url: FRONTEND_URL },
+        footer: `Ricevi questa email perché hai scelto di ricevere la newsletter. <a href="${unsub}" style="color:#8a7a66">Non voglio più riceverla</a>.`,
+      });
+      const ok = await sendEmail(u.email, (test ? '[Prova] ' : '') + subject.trim(), `${text}
+
+Per non ricevere più la newsletter: ${unsub}`, html);
+      results.push(!!ok);
+    }
+    const sent = results.filter(Boolean).length;
+    res.json({ message: 'Invio completato', sent, failed: results.length - sent, total: results.length });
+  } catch (err) {
+    console.error('Send newsletter error:', err);
+    res.status(500).json({ error: 'Invio non riuscito' });
+  }
+};
+
+const getNewsletterStats = async (req, res) => {
+  try {
+    const { rows: [r] } = await pool.query('SELECT count(*) FILTER (WHERE newsletter_opt_in)::int AS subscribed, count(*)::int AS total FROM users');
+    res.json(r);
+  } catch (err) {
+    console.error('Newsletter stats error:', err);
+    res.status(500).json({ error: 'Errore' });
+  }
+};
+
+module.exports = { getUsers, updateUserRole, updateUserName, resetUserPassword, getStats, getShiftStats, fixFutureShifts, sendUserResetLink, sendNewsletter, getNewsletterStats };

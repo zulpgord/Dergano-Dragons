@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import AccountModal from '../components/AccountModal';
 import { useNavigate } from 'react-router-dom';
 import { shiftsAPI, assignmentsAPI, authAPI } from '../services/api';
 
@@ -276,6 +277,7 @@ export default function DashboardPage() {
   });
   const [calendarRevealed, setCalendarRevealed] = useState(false);
   const [partyImg, setPartyImg] = useState('sx');
+  const [showAccount, setShowAccount] = useState(false);
 
   useEffect(() => {
     if (!user.id) { navigate('/auth'); return; }
@@ -480,12 +482,16 @@ export default function DashboardPage() {
           </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px', maxWidth: '1650px', margin: '4px auto 0', padding: '0 16px', fontSize: '0.72rem' }}>
+          <button onClick={() => setShowAccount(true)} style={{ background: 'none', border: 'none', color: '#b0801a', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.72rem', padding: 0, fontWeight: 700, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+            Il mio account
+          </button>
           <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#8a7f6c', textDecoration: 'underline' }}>Privacy</a>
           <button onClick={handleDeleteAccount} style={{ background: 'none', border: 'none', color: '#8a7f6c', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.72rem', padding: 0, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
             Elimina il mio account
           </button>
         </div>
       </header>
+      {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
 
       <main style={{ maxWidth: '1650px', margin: '0 auto', padding: '24px 16px' }}>
 

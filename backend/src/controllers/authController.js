@@ -1,10 +1,11 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../db/database');
+const { sendResetEmail, consumeResetToken } = require('../utils/passwordReset');
 require('dotenv').config();
 
 const register = async (req, res) => {
-  const { email, password, name, role, privacy_accepted } = req.body;
+  const { email, password, name, privacy_accepted, newsletter } = req.body;
   if (!email || !password || !name || !name.trim()) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -13,10 +14,11 @@ const register = async (req, res) => {
   }
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const userRole = role && role === 'admin' ? 'admin' : 'volunteer';
+    // Ci si registra sempre come eroe: admin si diventa solo se un altro admin lo promuove.
+    const userRole = 'volunteer';
     const result = await pool.query(
-      'INSERT INTO users (email, password_hash, name, role, privacy_accepted_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id, email, name, role',
-      [email, hashedPassword, name.trim(), userRole]
+      'INSERT INTO users (email, password_hash, name, role, privacy_accepted_at, newsletter_opt_in) VALUES ($1, $2, $3, $4, NOW(), $5) RETURNING id, email, name, role',
+      [email, hashedPassword, name.trim(), userRole, newsletter === true]
     );
     const user = result.rows[0];
     const token = jwt.sign(
@@ -106,4 +108,116 @@ const deleteMyAccount = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getUsers, updateUserRole, deleteMyAccount };
+const MIN_PASSWORD = 8;
+
+// "Password dimenticata": risponde sempre allo stesso modo, cosi' non rivela quali email sono registrate.
+const forgotPassword = async (req, res) => {
+  const email = (req.body.email || '').trim().toLowerCase();
+  if (!email) return res.status(400).json({ error: 'Inserisci la tua email' });
+  try {
+    const { rows } = await pool.query('SELECT id, name, email FROM users WHERE lower(email) = $1', [email]);
+    if (rows[0]) {
+      const r = await sendResetEmail(rows[0]);
+      if (r === 'limit') return res.status(429).json({ error: 'Troppe richieste: riprova tra un’ora' });
+    }
+    res.json({ message: 'Se l’email è registrata, riceverai un link per scegliere una nuova password.' });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ error: 'Invio non riuscito, riprova' });
+  }
+};
+
+// Nuova password dal link monouso ricevuto per email.
+const resetPassword = async (req, res) => {
+  const { token, password } = req.body;
+  if (!token) return res.status(400).json({ error: 'Link non valido' });
+  if (!password || password.length < MIN_PASSWORD) return res.status(400).json({ error: `La password deve avere almeno ${MIN_PASSWORD} caratteri` });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const userId = await consumeResetToken(token, client);
+    if (!userId) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Link scaduto o già usato: richiedine uno nuovo' });
+    }
+    const hash = await bcrypt.hash(password, 10);
+    const { rows } = await client.query(
+      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, email, name, role',
+      [hash, userId]
+    );
+    // Gli altri link ancora aperti per questo utente non servono piu'.
+    await client.query('UPDATE password_resets SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL', [userId]);
+    await client.query('COMMIT');
+    const user = rows[0];
+    const jwtToken = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    res.json({ message: 'Password aggiornata', token: jwtToken, user });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Aggiornamento non riuscito, riprova' });
+  } finally {
+    client.release();
+  }
+};
+
+// Cambio password da loggato: serve quella attuale.
+const changePassword = async (req, res) => {
+  const { current_password, new_password } = req.body;
+  if (!new_password || new_password.length < MIN_PASSWORD) return res.status(400).json({ error: `La nuova password deve avere almeno ${MIN_PASSWORD} caratteri` });
+  try {
+    const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'User not found' });
+    if (!(await bcrypt.compare(current_password || '', rows[0].password_hash))) {
+      return res.status(400).json({ error: 'La password attuale non è corretta' });
+    }
+    await pool.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [await bcrypt.hash(new_password, 10), req.user.id]);
+    res.json({ message: 'Password cambiata' });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({ error: 'Cambio password non riuscito' });
+  }
+};
+
+// Preferenze del proprio account (per ora: newsletter).
+const getMe = async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT id, email, name, role, newsletter_opt_in FROM users WHERE id = $1', [req.user.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'User not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Get me error:', err);
+    res.status(500).json({ error: 'Errore nel caricamento del profilo' });
+  }
+};
+
+const setNewsletter = async (req, res) => {
+  try {
+    await pool.query('UPDATE users SET newsletter_opt_in = $1 WHERE id = $2', [req.body.newsletter === true, req.user.id]);
+    res.json({ newsletter_opt_in: req.body.newsletter === true });
+  } catch (err) {
+    console.error('Set newsletter error:', err);
+    res.status(500).json({ error: 'Salvataggio non riuscito' });
+  }
+};
+
+// Disiscrizione dal link in fondo alla newsletter: funziona senza login.
+const unsubscribe = async (req, res) => {
+  let uid = null;
+  try {
+    const p = jwt.verify(String(req.query.token || ''), process.env.JWT_SECRET);
+    if (p.purpose === 'unsubscribe') uid = p.id;
+  } catch { /* token non valido */ }
+  const page = (msg) => `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Newsletter</title>
+<body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#fbf6ec;color:#2a2118;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:16px">
+<div style="max-width:420px;text-align:center"><h1 style="font-family:Georgia,serif;color:#7a4e12">🐉 Dergano &amp; Dragons</h1><p>${msg}</p></div></body>`;
+  if (!uid) return res.status(400).send(page('Link di disiscrizione non valido.'));
+  try {
+    await pool.query('UPDATE users SET newsletter_opt_in = FALSE WHERE id = $1', [uid]);
+    res.send(page('Fatto: non riceverai più la newsletter. Continuerai a ricevere solo le email sulle sessioni a cui sei iscritto.'));
+  } catch (err) {
+    console.error('Unsubscribe error:', err);
+    res.status(500).send(page('Qualcosa è andato storto, riprova più tardi.'));
+  }
+};
+
+module.exports = { register, login, getUsers, updateUserRole, deleteMyAccount, forgotPassword, resetPassword, changePassword, getMe, setNewsletter, unsubscribe };

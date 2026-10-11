@@ -56,8 +56,18 @@ api.interceptors.response.use(undefined, async (error) => {
 
 // Auth endpoints
 export const authAPI = {
-  register: (email, password, name, privacyAccepted) =>
-    api.post('/auth/register', { email, password, name, privacy_accepted: privacyAccepted }),
+  register: (email, password, name, privacyAccepted, newsletter = false) =>
+    api.post('/auth/register', { email, password, name, privacy_accepted: privacyAccepted, newsletter }),
+  forgotPassword: (email) =>
+    api.post('/auth/forgot', { email }),
+  resetPassword: (token, password) =>
+    api.post('/auth/reset', { token, password }),
+  changePassword: (currentPassword, newPassword) =>
+    api.put('/auth/me/password', { current_password: currentPassword, new_password: newPassword }),
+  getMe: () =>
+    api.get('/auth/me'),
+  setNewsletter: (newsletter) =>
+    api.put('/auth/me/newsletter', { newsletter }),
   login: (email, password) =>
     api.post('/auth/login', { email, password }),
   deleteMyAccount: () =>
@@ -76,6 +86,8 @@ export const shiftsAPI = {
     api.patch(`/shifts/${id}/cancel`),
   deleteShift: (id) =>
     api.delete(`/shifts/${id}`),
+  emailParticipants: (id, subject, message, includeWaiting = false) =>
+    api.post(`/shifts/${id}/email`, { subject, message, include_waiting: includeWaiting }),
 };
 
 // Assignments endpoints
@@ -114,6 +126,14 @@ export const adminAPI = {
     api.get('/admin/shift-stats', { params }),
   fixFutureShifts: () =>
     api.post('/admin/fix-shifts'),
+  resetUserPassword: (id, newPassword) =>
+    api.put(`/admin/users/${id}/password`, { new_password: newPassword }),
+  sendResetLink: (id) =>
+    api.post(`/admin/users/${id}/reset-link`),
+  getNewsletterStats: () =>
+    api.get('/admin/newsletter'),
+  sendNewsletter: (subject, message, test = false) =>
+    api.post('/admin/newsletter', { subject, message, test }),
 };
 
 // Groups endpoints

@@ -4,6 +4,7 @@ import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminPage from './pages/AdminPage';
 import PrivacyPage from './pages/PrivacyPage';
+import ResetPage from './pages/ResetPage';
 import PersonaggiPage from './pages/PersonaggiPage';
 import './App.css';
 
@@ -24,6 +25,7 @@ function App() {
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/reset" element={<ResetPage />} />
         <Route
           path="/dashboard"
           element={
