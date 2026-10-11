@@ -282,18 +282,30 @@ function NewsletterSection() {
   const [stats, setStats] = useState(null);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [target, setTarget] = useState('all');
+  const [groupIds, setGroupIds] = useState([]);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
+  const [inviteResult, setInviteResult] = useState(null);
 
-  useEffect(() => { adminAPI.getNewsletterStats().then(r => setStats(r.data)).catch(() => {}); }, []);
+  const load = () => adminAPI.getNewsletterStats().then(r => setStats(r.data)).catch(() => {});
+  useEffect(() => { load(); }, []);
+
+  const groups = stats?.groups || [];
+  const selected = groups.filter(g => groupIds.includes(g.id));
+  // Stima: chi sta in piu' tavoli selezionati riceve comunque una sola email (il server deduplica).
+  const recipients = target === 'all' ? (stats?.subscribed ?? 0) : selected.reduce((a, g) => a + g.subscribed, 0);
+  const notSubscribed = stats ? stats.total - stats.subscribed : 0;
 
   const send = async (test) => {
     if (!subject.trim() || !message.trim()) return setResult({ ok: false, text: 'Scrivi oggetto e messaggio' });
-    if (!test && !confirm(`Inviare la newsletter a ${stats?.subscribed ?? '?'} iscritti?`)) return;
+    if (target === 'groups' && groupIds.length === 0) return setResult({ ok: false, text: 'Scegli almeno un tavolo' });
+    const dest = target === 'all' ? 'tutti gli iscritti alla newsletter' : `gli iscritti di: ${selected.map(g => g.name).join(', ')}`;
+    if (!test && !confirm(`Inviare la newsletter a ${dest}?`)) return;
     setSending(true);
     setResult(null);
     try {
-      const r = await adminAPI.sendNewsletter(subject, message, test);
+      const r = await adminAPI.sendNewsletter(subject, message, test, target === 'groups' ? groupIds : []);
       setResult({ ok: true, text: test ? '✓ Prova inviata alla tua email' : `✓ Inviata a ${r.data.sent} su ${r.data.total}${r.data.failed ? ` (${r.data.failed} non riuscite)` : ''}` });
       if (!test) { setSubject(''); setMessage(''); }
     } catch (err) {
@@ -301,26 +313,85 @@ function NewsletterSection() {
     } finally { setSending(false); }
   };
 
+  const sendInvite = async (test) => {
+    if (!test && !confirm(`Inviare l’invito a ${notSubscribed} ${notSubscribed === 1 ? 'iscritto' : 'iscritti'} che non hanno ancora accettato la newsletter?`)) return;
+    setSending(true);
+    setInviteResult(null);
+    try {
+      const r = await adminAPI.sendNewsletterInvite(test);
+      setInviteResult({ ok: true, text: test ? '✓ Prova inviata alla tua email' : `✓ Invito inviato a ${r.data.sent} su ${r.data.total}` });
+    } catch (err) {
+      setInviteResult({ ok: false, text: err.response?.data?.error || 'Invio non riuscito' });
+    } finally { setSending(false); }
+  };
+
+  const card = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', maxWidth: '640px', marginBottom: '16px' };
+  const h2 = { fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 6px', fontSize: '1.05rem' };
+  const p = { fontSize: '0.82rem', color: '#6b5a3c', margin: '0 0 14px', lineHeight: 1.5 };
   const field = { width: '100%', padding: '9px 12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '16px', boxSizing: 'border-box', fontFamily: 'inherit' };
   const btn = { padding: '10px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', opacity: sending ? 0.6 : 1 };
+  const ghost = { ...btn, background: 'rgba(169,121,26,0.12)', color: '#b0801a', border: '1px solid rgba(169,121,26,0.35)' };
+  const gold = { ...btn, flex: 1, background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a' };
+  const chip = (on) => ({ padding: '7px 14px', borderRadius: '20px', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', border: `1px solid ${on ? '#b0801a' : 'var(--border)'}`, background: on ? 'rgba(169,121,26,0.14)' : 'var(--bg-surface)', color: on ? '#8a6a14' : '#6b5a3c', fontWeight: on ? 700 : 400 });
+
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', maxWidth: '640px' }}>
-      <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 6px', fontSize: '1.05rem' }}>📜 Newsletter</h2>
-      <p style={{ fontSize: '0.82rem', color: '#6b5a3c', margin: '0 0 16px', lineHeight: 1.5 }}>
-        {stats ? <><strong>{stats.subscribed}</strong> iscritti su {stats.total} hanno scelto di riceverla. </> : null}
-        Parte solo a chi ha dato il consenso; ogni email ha il link per disiscriversi.
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <input placeholder="Oggetto" value={subject} onChange={e => setSubject(e.target.value)} style={field} />
-        <textarea placeholder="Messaggio (es. le sessioni del prossimo mese)" rows={8} value={message} onChange={e => setMessage(e.target.value)} style={field} />
-        {result && <p style={{ fontSize: '0.85rem', margin: 0, color: result.ok ? '#2b6663' : '#a23b22' }}>{result.text}</p>}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button type="button" disabled={sending} onClick={() => send(true)} style={{ ...btn, background: 'rgba(169,121,26,0.12)', color: '#b0801a', border: '1px solid rgba(169,121,26,0.35)' }}>
-            Mandami una prova
-          </button>
-          <button type="button" disabled={sending || !stats?.subscribed} onClick={() => send(false)} style={{ ...btn, flex: 1, background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a' }}>
-            {sending ? 'Invio...' : `Invia a ${stats?.subscribed ?? 0} iscritti`}
-          </button>
+    <div>
+      {/* Invito al consenso, per chi era gia' iscritto prima della newsletter */}
+      {notSubscribed > 0 && (
+        <div style={{ ...card, borderColor: 'rgba(169,121,26,0.45)' }}>
+          <h2 style={h2}>✉️ Invita a iscriversi</h2>
+          <p style={p}>
+            <strong>{notSubscribed}</strong> {notSubscribed === 1 ? 'iscritto non ha' : 'iscritti non hanno'} ancora accettato la newsletter.
+            Ricevono un’email con il pulsante «Sì, voglio ricevere la newsletter»: un tocco e il consenso è registrato, senza entrare nel sito.
+            Chi non risponde non riceverà nulla.
+          </p>
+          {inviteResult && <p style={{ fontSize: '0.85rem', margin: '0 0 10px', color: inviteResult.ok ? '#2b6663' : '#a23b22' }}>{inviteResult.text}</p>}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button type="button" disabled={sending} onClick={() => sendInvite(true)} style={ghost}>Mandami una prova</button>
+            <button type="button" disabled={sending} onClick={() => sendInvite(false)} style={gold}>Invia l’invito a {notSubscribed}</button>
+          </div>
+        </div>
+      )}
+
+      <div style={card}>
+        <h2 style={h2}>📜 Newsletter</h2>
+        <p style={p}>
+          {stats ? <><strong>{stats.subscribed}</strong> iscritti su {stats.total} hanno scelto di riceverla. </> : null}
+          Parte solo a chi ha dato il consenso; ogni email ha il link per disiscriversi.
+        </p>
+
+        <p style={{ ...p, margin: '0 0 8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.72rem' }}>A chi</p>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+          <button type="button" onClick={() => setTarget('all')} style={chip(target === 'all')}>Tutti gli iscritti</button>
+          <button type="button" onClick={() => setTarget('groups')} style={chip(target === 'groups')}>Solo alcuni tavoli</button>
+        </div>
+        {target === 'groups' && (
+          groups.length === 0
+            ? <p style={p}>Non hai ancora creato tavoli: falli dalla tab 👥 Gruppi.</p>
+            : <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                {groups.map(g => {
+                  const on = groupIds.includes(g.id);
+                  return (
+                    <button key={g.id} type="button" onClick={() => setGroupIds(ids => on ? ids.filter(i => i !== g.id) : [...ids, g.id])} style={chip(on)}
+                      title={`${g.subscribed} su ${g.members} hanno accettato la newsletter`}>
+                      {on ? '✓ ' : ''}{g.name} <span style={{ opacity: 0.7 }}>· {g.subscribed}/{g.members}</span>
+                    </button>
+                  );
+                })}
+              </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <input placeholder="Oggetto" value={subject} onChange={e => setSubject(e.target.value)} style={field} />
+          <textarea placeholder="Messaggio (es. le sessioni del prossimo mese)" rows={8} value={message} onChange={e => setMessage(e.target.value)} style={field} />
+          {result && <p style={{ fontSize: '0.85rem', margin: 0, color: result.ok ? '#2b6663' : '#a23b22' }}>{result.text}</p>}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button type="button" disabled={sending} onClick={() => send(true)} style={ghost}>Mandami una prova</button>
+            <button type="button" disabled={sending || !recipients} onClick={() => send(false)} style={gold}>
+              {sending ? 'Invio...' : target === 'all' ? `Invia a ${recipients} iscritti` : `Invia ai tavoli scelti (fino a ${recipients})`}
+            </button>
+          </div>
+          {target === 'groups' && <p style={{ fontSize: '0.75rem', color: '#8a7f6c', margin: 0 }}>Il numero accanto a ogni tavolo indica quanti hanno accettato la newsletter su quanti membri. Chi è in più tavoli riceve una sola email.</p>}
         </div>
       </div>
     </div>

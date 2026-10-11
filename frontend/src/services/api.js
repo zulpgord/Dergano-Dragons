@@ -132,8 +132,10 @@ export const adminAPI = {
     api.post(`/admin/users/${id}/reset-link`),
   getNewsletterStats: () =>
     api.get('/admin/newsletter'),
-  sendNewsletter: (subject, message, test = false) =>
-    api.post('/admin/newsletter', { subject, message, test }),
+  sendNewsletter: (subject, message, test = false, groupIds = []) =>
+    api.post('/admin/newsletter', { subject, message, test, group_ids: groupIds }),
+  sendNewsletterInvite: (test = false) =>
+    api.post('/admin/newsletter/invite', { test }),
 };
 
 // Groups endpoints

@@ -182,12 +182,18 @@ const sendUserResetLink = async (req, res) => {
 // Con test=true va solo all'admin che la sta scrivendo, per vedere l'anteprima.
 const sendNewsletter = async (req, res) => {
   const { subject, message, test } = req.body;
+  // group_ids vuoto o assente = tutti gli iscritti alla newsletter; altrimenti solo i membri di quei tavoli.
+  const groupIds = Array.isArray(req.body.group_ids) ? req.body.group_ids.map(Number).filter(Boolean) : [];
   if (!subject?.trim() || !message?.trim()) return res.status(400).json({ error: 'Oggetto e messaggio sono obbligatori' });
   try {
     const { rows } = test
       ? await pool.query('SELECT id, name, email FROM users WHERE id = $1', [req.user.id])
-      : await pool.query('SELECT id, name, email FROM users WHERE newsletter_opt_in = TRUE ORDER BY id');
-    if (rows.length === 0) return res.status(400).json({ error: 'Nessun iscritto ha ancora accettato la newsletter' });
+      : groupIds.length
+        ? await pool.query(
+            `SELECT DISTINCT u.id, u.name, u.email FROM users u JOIN user_groups ug ON ug.user_id = u.id
+             WHERE u.newsletter_opt_in = TRUE AND ug.group_id = ANY($1) ORDER BY u.id`, [groupIds])
+        : await pool.query('SELECT id, name, email FROM users WHERE newsletter_opt_in = TRUE ORDER BY id');
+    if (rows.length === 0) return res.status(400).json({ error: groupIds.length ? 'Nessuno in questi tavoli ha accettato la newsletter' : 'Nessun iscritto ha ancora accettato la newsletter' });
     const apiBase = `${req.protocol}://${req.get('host')}`;
     const results = [];
     // In sequenza, per restare comodi nei limiti di Brevo.
@@ -216,11 +222,45 @@ Per non ricevere più la newsletter: ${unsub}`, html);
 const getNewsletterStats = async (req, res) => {
   try {
     const { rows: [r] } = await pool.query('SELECT count(*) FILTER (WHERE newsletter_opt_in)::int AS subscribed, count(*)::int AS total FROM users');
-    res.json(r);
+    const { rows: groups } = await pool.query(
+      `SELECT g.id, g.name, count(u.id)::int AS members, count(u.id) FILTER (WHERE u.newsletter_opt_in)::int AS subscribed
+       FROM groups g LEFT JOIN user_groups ug ON ug.group_id = g.id LEFT JOIN users u ON u.id = ug.user_id
+       GROUP BY g.id ORDER BY g.name`
+    );
+    res.json({ ...r, groups });
   } catch (err) {
     console.error('Newsletter stats error:', err);
     res.status(500).json({ error: 'Errore' });
   }
 };
 
-module.exports = { getUsers, updateUserRole, updateUserName, resetUserPassword, getStats, getShiftStats, fixFutureShifts, sendUserResetLink, sendNewsletter, getNewsletterStats };
+// Invito una tantum a chi non ha ancora accettato la newsletter: un pulsante registra il consenso.
+// E' un messaggio di servizio sul proprio account, non la newsletter stessa.
+const sendNewsletterInvite = async (req, res) => {
+  const { test } = req.body;
+  try {
+    const { rows } = test
+      ? await pool.query('SELECT id, name, email FROM users WHERE id = $1', [req.user.id])
+      : await pool.query('SELECT id, name, email FROM users WHERE newsletter_opt_in = FALSE ORDER BY id');
+    if (rows.length === 0) return res.status(400).json({ error: 'Hanno già accettato tutti' });
+    const apiBase = `${req.protocol}://${req.get('host')}`;
+    const results = [];
+    for (const u of rows) {
+      const token = jwt.sign({ id: u.id, purpose: 'subscribe' }, process.env.JWT_SECRET, { expiresIn: '60d' });
+      const { html, text } = renderMail({
+        greeting: `Ciao ${u.name},`,
+        body: 'da oggi Dergano & Dragons ha una newsletter: ogni tanto ti scriveremo per annunciare le nuove sessioni, gli eventi speciali e le novità della gilda.\n\nPer riceverla serve il tuo consenso: basta toccare il pulsante qui sotto. Se non ti interessa, ignora questa email e non riceverai nulla. Gli avvisi sulle sessioni a cui ti iscrivi continueranno ad arrivare comunque.',
+        button: { label: 'Sì, voglio ricevere la newsletter', url: `${apiBase}/api/auth/subscribe?token=${encodeURIComponent(token)}` },
+        footer: 'Puoi cambiare idea quando vuoi da «Il mio account» sul sito, o dal link in fondo a ogni newsletter.',
+      });
+      results.push(!!(await sendEmail(u.email, (test ? '[Prova] ' : '') + 'Vuoi ricevere la newsletter di Dergano & Dragons?', text, html)));
+    }
+    const sent = results.filter(Boolean).length;
+    res.json({ message: 'Invio completato', sent, failed: results.length - sent, total: results.length });
+  } catch (err) {
+    console.error('Send newsletter invite error:', err);
+    res.status(500).json({ error: 'Invio non riuscito' });
+  }
+};
+
+module.exports = { getUsers, updateUserRole, updateUserName, resetUserPassword, getStats, getShiftStats, fixFutureShifts, sendUserResetLink, sendNewsletter, getNewsletterStats, sendNewsletterInvite };

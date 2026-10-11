@@ -200,24 +200,28 @@ const setNewsletter = async (req, res) => {
   }
 };
 
-// Disiscrizione dal link in fondo alla newsletter: funziona senza login.
-const unsubscribe = async (req, res) => {
+// Link pubblici della newsletter (iscrizione dall'invito, disiscrizione dal fondo di ogni email): niente login.
+const newsletterLink = (purpose, value, okMsg) => async (req, res) => {
   let uid = null;
   try {
     const p = jwt.verify(String(req.query.token || ''), process.env.JWT_SECRET);
-    if (p.purpose === 'unsubscribe') uid = p.id;
-  } catch { /* token non valido */ }
+    if (p.purpose === purpose) uid = p.id;
+  } catch { /* token non valido o scaduto */ }
   const page = (msg) => `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Newsletter</title>
 <body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#fbf6ec;color:#2a2118;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:16px">
 <div style="max-width:420px;text-align:center"><h1 style="font-family:Georgia,serif;color:#7a4e12">🐉 Dergano &amp; Dragons</h1><p>${msg}</p></div></body>`;
-  if (!uid) return res.status(400).send(page('Link di disiscrizione non valido.'));
+  if (!uid) return res.status(400).send(page('Link non valido o scaduto. Puoi gestire la newsletter da «Il mio account» sul sito.'));
   try {
-    await pool.query('UPDATE users SET newsletter_opt_in = FALSE WHERE id = $1', [uid]);
-    res.send(page('Fatto: non riceverai più la newsletter. Continuerai a ricevere solo le email sulle sessioni a cui sei iscritto.'));
+    const r = await pool.query('UPDATE users SET newsletter_opt_in = $1 WHERE id = $2', [value, uid]);
+    if (r.rowCount === 0) return res.status(404).send(page('Account non trovato.'));
+    res.send(page(okMsg));
   } catch (err) {
     console.error('Unsubscribe error:', err);
     res.status(500).send(page('Qualcosa è andato storto, riprova più tardi.'));
   }
 };
 
-module.exports = { register, login, getUsers, updateUserRole, deleteMyAccount, forgotPassword, resetPassword, changePassword, getMe, setNewsletter, unsubscribe };
+const unsubscribe = newsletterLink('unsubscribe', false, 'Fatto: non riceverai più la newsletter. Continuerai a ricevere solo le email sulle sessioni a cui sei iscritto.');
+const subscribe = newsletterLink('subscribe', true, 'Grazie! 🎲 Da ora riceverai la newsletter con le nuove sessioni e le novità. Puoi disiscriverti quando vuoi dal link in fondo a ogni email.');
+
+module.exports = { register, login, getUsers, updateUserRole, deleteMyAccount, forgotPassword, resetPassword, changePassword, getMe, setNewsletter, unsubscribe, subscribe };
