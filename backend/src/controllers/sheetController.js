@@ -21,8 +21,8 @@ const conImmagine = (r) => ({ ...r, image_path: r.image_path || `/schede/img/${r
 // autorizzato, oppure autorizzazione nominale. L'admin vede tutto.
 // ---------------------------------------------------------------------------
 const getSheets = async (req, res) => {
-  await initTabelle();
   try {
+    try { await initTabelle(); } catch (e) { console.error('Sheets init error:', e); return res.status(500).json({ error: 'Schede non disponibili, riprova' }); }
     if (req.user.role === 'admin') {
       const result = await pool.query(`
         SELECT s.*,
@@ -59,8 +59,8 @@ const getSheets = async (req, res) => {
 // GET /api/sheets/:slug/download — verifica il permesso e rimanda al PDF.
 // ---------------------------------------------------------------------------
 const downloadSheet = async (req, res) => {
-  await initTabelle();
   try {
+    try { await initTabelle(); } catch (e) { console.error('Sheets init error:', e); return res.status(500).json({ error: 'Schede non disponibili, riprova' }); }
     const result = await pool.query(`
       SELECT s.pdf_path,
         (s.visible_to_all
@@ -88,7 +88,7 @@ const CAMPI = ['visible_to_all', 'archived', 'blurb', 'difficulty', 'style',
                'role_tag', 'sort_order', 'image_path'];
 
 const updateSheet = async (req, res) => {
-  await initTabelle();
+  try { await initTabelle(); } catch (e) { console.error('Sheets init error:', e); return res.status(500).json({ error: 'Schede non disponibili, riprova' }); }
   const set = [], val = [];
   CAMPI.forEach((c) => {
     if (req.body[c] !== undefined) { val.push(req.body[c]); set.push(`${c} = $${val.length}`); }
@@ -108,7 +108,7 @@ const updateSheet = async (req, res) => {
 };
 
 const setSheetGroups = async (req, res) => {
-  await initTabelle();
+  try { await initTabelle(); } catch (e) { console.error('Sheets init error:', e); return res.status(500).json({ error: 'Schede non disponibili, riprova' }); }
   const ids = Array.isArray(req.body.group_ids) ? req.body.group_ids : [];
   const client = await pool.connect();
   try {
@@ -131,7 +131,7 @@ const setSheetGroups = async (req, res) => {
 };
 
 const setSheetUsers = async (req, res) => {
-  await initTabelle();
+  try { await initTabelle(); } catch (e) { console.error('Sheets init error:', e); return res.status(500).json({ error: 'Schede non disponibili, riprova' }); }
   const ids = Array.isArray(req.body.user_ids) ? req.body.user_ids : [];
   const client = await pool.connect();
   try {
@@ -154,7 +154,7 @@ const setSheetUsers = async (req, res) => {
 };
 
 const bulkVisibility = async (req, res) => {
-  await initTabelle();
+  try { await initTabelle(); } catch (e) { console.error('Sheets init error:', e); return res.status(500).json({ error: 'Schede non disponibili, riprova' }); }
   const { ids = [], visible_to_all } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: 'Nessuna scheda selezionata' });

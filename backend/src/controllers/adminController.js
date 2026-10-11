@@ -89,11 +89,11 @@ const getStats = async (req, res) => {
   const params = [];
   if (year) {
     params.push(parseInt(year));
-    dateFilter += ` AND EXTRACT(YEAR FROM s.start_time) = $${params.length}`;
+    dateFilter += ` AND EXTRACT(YEAR FROM s.start_time AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Rome') = $${params.length}`;
   }
   if (month) {
     params.push(parseInt(month));
-    dateFilter += ` AND EXTRACT(MONTH FROM s.start_time) = $${params.length}`;
+    dateFilter += ` AND EXTRACT(MONTH FROM s.start_time AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Rome') = $${params.length}`;
   }
   try {
     const result = await pool.query(
@@ -106,8 +106,7 @@ const getStats = async (req, res) => {
         COUNT(CASE WHEN a.status = 'cancelled' THEN 1 END)::int AS cancelled_bookings,
         COALESCE(SUM(CASE WHEN a.status = 'assigned' THEN EXTRACT(EPOCH FROM (s.end_time - s.start_time))/3600 END), 0)::numeric(10,1) AS total_hours
       FROM users u
-      LEFT JOIN assignments a ON a.user_id = u.id
-      LEFT JOIN shifts s ON a.shift_id = s.id ${dateFilter}
+      LEFT JOIN (assignments a JOIN shifts s ON a.shift_id = s.id ${dateFilter}) ON a.user_id = u.id
       WHERE u.role = 'volunteer'
       GROUP BY u.id, u.name, u.email
       ORDER BY total_bookings DESC`,

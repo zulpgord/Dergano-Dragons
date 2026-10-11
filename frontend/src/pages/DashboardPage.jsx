@@ -57,7 +57,11 @@ function FillBar({ current, total, height = 7 }) {
 
 // ── Modale sessione ──────────────────────────────────────────────────────────
 function SessionModal({ session, userAssignments, onClose, onAssign, onCancel }) {
+  const [isBooking, setIsBooking] = useState(false);
+  const [seatsWanted, setSeatsWanted] = useState(1);
+  useEffect(() => { setIsBooking(false); setSeatsWanted(1); }, [session?.id]);
   if (!session) return null;
+  const isPast = new Date(session.end_time) < new Date();
   const fmt = (dt) => new Date(dt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   const fmtDate = (dt) => new Date(dt).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const myAssignment = userAssignments.find(a => a.shift_id === session.id && ['assigned', 'waiting'].includes(a.status));
@@ -68,10 +72,8 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
   const partial = session.assigned_count > 0 && session.assigned_count < session.required_count;
   const assignedUsers = session.assigned_users || [];
   const waitingUsers = session.waiting_users || [];
-  const [isBooking, setIsBooking] = useState(false);
-  const [seatsWanted, setSeatsWanted] = useState(1);
-
   const statusLabel = session.cancelled ? 'Annullata'
+    : isPast ? 'Conclusa'
     : isAssigned ? '✓ Sei registrato'
     : isWaitingMe ? '⏳ Sei in lista d\'attesa'
     : fullyC ? 'Completa'
@@ -205,6 +207,10 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
         {session.cancelled ? (
           <div style={{ background: 'rgba(169,121,26,0.12)', border: '1px solid rgba(169,121,26,0.25)', borderRadius: '8px', padding: '12px', textAlign: 'center', color: 'var(--red)', fontSize: '0.85rem' }}>
             Questa sessione è stata annullata dall'organizzazione.
+          </div>
+        ) : isPast ? (
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            {isRegistered ? '✓ Hai partecipato a questa sessione.' : 'Questa sessione è già conclusa.'}
           </div>
         ) : isRegistered ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -434,7 +440,7 @@ export default function DashboardPage() {
         padding: '14px 24px',
         boxShadow: '0 2px 10px rgba(80,60,20,0.08)',
       }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+        <div className="dg-header-row" style={{ maxWidth: '1240px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <DerganoHeader />
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <button
@@ -484,7 +490,7 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px', maxWidth: '1650px', margin: '4px auto 0', padding: '0 16px', fontSize: '0.72rem' }}>
+        <div className="dg-header-links" style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px', maxWidth: '1240px', margin: '4px auto 0', padding: '0', fontSize: '0.72rem' }}>
           <button onClick={() => setShowAccount(true)} style={{ background: 'none', border: 'none', color: 'var(--gold)', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.72rem', padding: 0, fontWeight: 700, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
             Il mio account
           </button>
@@ -496,9 +502,9 @@ export default function DashboardPage() {
       </header>
       {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
 
-      <main style={{ maxWidth: '1650px', margin: '0 auto', padding: '24px 16px' }}>
+      <main style={{ maxWidth: '1288px', margin: '0 auto', padding: '24px 24px 48px' }}>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '18px', marginBottom: '16px' }}>
           <button onClick={prevMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--gold)', fontSize: '1.2rem', cursor: 'pointer' }}>‹</button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h2 style={{ margin: 0, fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', fontSize: '1.1rem' }}>
@@ -511,7 +517,7 @@ export default function DashboardPage() {
           <button onClick={nextMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--gold)', fontSize: '1.2rem', cursor: 'pointer' }}>›</button>
         </div>
 
-        <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: 'var(--bg-card)', padding: '4px', borderRadius: '10px', width: 'fit-content', border: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', gap: '4px', margin: '0 auto 22px', background: 'var(--bg-card)', padding: '4px', borderRadius: '10px', width: 'fit-content', border: '1px solid var(--border)' }}>
           {['calendario', 'lista'].map(mode => (
             <button
               key={mode}
@@ -567,12 +573,12 @@ export default function DashboardPage() {
                   <img src="/party-sx.jpg" alt="" className="calendar-side-art" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '4px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', marginBottom: '4px' }}>
                   {DAYS_IT.map(d => (
                     <div key={d} style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-dim)', padding: '4px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{d}</div>
                   ))}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '3px' }}>
                   {cells.map((day, idx) => {
                     const daySessions = day ? (sessionsByDay[day] || []) : [];
                     const today = new Date();
@@ -673,7 +679,9 @@ export default function DashboardPage() {
                       const assignedUsers = s.assigned_users || [];
                       const waitingUsers = s.waiting_users || [];
                       const fullyC = s.assigned_count >= s.required_count;
+                      const isPast = new Date(s.end_time) < new Date();
                       const statusLabel = s.cancelled ? 'Annullata'
+                        : isPast ? 'Conclusa'
                         : s.assigned_count === 0 ? 'Nessun avventuriero'
                         : s.assigned_count < s.required_count ? `${s.assigned_count}/${s.required_count} avventurieri`
                         : `${s.assigned_count}/${s.required_count} ✓`;
@@ -681,6 +689,7 @@ export default function DashboardPage() {
                         <div key={s.id} style={{
                           padding: '14px', borderRadius: '10px',
                           background: s.cancelled ? 'rgba(169,121,26,0.06)' : 'var(--bg-page)',
+                          opacity: isPast && !s.cancelled ? 0.7 : 1,
                           border: isMySession ? '1.5px solid var(--green)' : isMyWaiting ? '1.5px dashed var(--gold)' : '1px solid var(--border)',
                           opacity: s.cancelled ? 0.75 : 1,
                         }}>
@@ -717,7 +726,7 @@ export default function DashboardPage() {
                                 </p>
                               )}
                             </div>
-                            {!s.cancelled && (
+                            {!s.cancelled && !isPast && (
                               (isMySession || isMyWaiting) ? (
                                 <button
                                   onClick={() => handleCancel(myAssignment?.id)}

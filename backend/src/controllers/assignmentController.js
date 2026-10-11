@@ -1,87 +1,120 @@
 const { pool } = require('../db/database');
 const { sendEmail } = require('../utils/emailService');
 
+// Il server gira in UTC: senza fuso le email mostrerebbero l'orario sbagliato di 1-2 ore.
+const fmtRome = (d) => new Date(d).toLocaleString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+
+// Promuove in ordine d'arrivo chi e' in lista d'attesa, finche' i posti liberi bastano (FIFO, non si salta la fila).
+// Usata quando qualcuno si cancella e quando l'admin aumenta i posti di una sessione.
+const promoteWaiting = async (shiftId, client = pool) => {
+  const { rows: [shift] } = await client.query(
+    'SELECT s.required_count, s.start_time, l.name AS location_name FROM shifts s JOIN locations l ON l.id = s.location_id WHERE s.id = $1',
+    [shiftId]
+  );
+  if (!shift) return [];
+  const seatsRes = await client.query(
+    "SELECT COALESCE(SUM(seats), 0) AS total FROM assignments WHERE shift_id = $1 AND status = 'assigned'", [shiftId]
+  );
+  let free = shift.required_count - parseInt(seatsRes.rows[0].total);
+  const waiting = await client.query(
+    `SELECT a.id, a.seats, u.email, u.name FROM assignments a JOIN users u ON u.id = a.user_id
+     WHERE a.shift_id = $1 AND a.status = 'waiting' ORDER BY a.assigned_at ASC`, [shiftId]
+  );
+  const promoted = [];
+  for (const c of waiting.rows) {
+    if (c.seats > free) break;
+    await client.query("UPDATE assignments SET status = 'assigned', updated_at = CURRENT_TIMESTAMP WHERE id = $1", [c.id]);
+    free -= c.seats;
+    promoted.push({ ...c, shift });
+  }
+  return promoted;
+};
+
+const notifyPromoted = (promoted) => {
+  for (const p of promoted) {
+    sendEmail(
+      p.email,
+      '🎉 Si è liberato un posto: sei dentro!',
+      `Ciao ${p.name},\n\nsi è liberato un posto e sei passato dalla lista d'attesa agli iscritti.\n\nDove: ${p.shift.location_name}\nQuando: ${fmtRome(p.shift.start_time)}\n\nCi vediamo al tavolo!`
+    ).catch(err => console.error('Email send error (non-fatal):', err));
+  }
+};
+
+// Controlla e iscrive dentro una transazione: la riga della sessione resta bloccata finche' non abbiamo
+// deciso, cosi' due iscrizioni contemporanee non possono superare i posti disponibili.
+const registerInShift = async ({ shiftId, userId, seats, hours, asAdmin, role }) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows: [shift] } = await client.query(
+      'SELECT id, required_count, cancelled, end_time, visible_to_all FROM shifts WHERE id = $1 FOR UPDATE', [shiftId]
+    );
+    if (!shift) { await client.query('ROLLBACK'); return { error: [404, 'Sessione non trovata'] }; }
+    if (shift.cancelled) { await client.query('ROLLBACK'); return { error: [400, 'Questa sessione è stata annullata'] }; }
+    if (!asAdmin && new Date(shift.end_time) < new Date()) { await client.query('ROLLBACK'); return { error: [400, 'Questa sessione è già conclusa'] }; }
+    if (!asAdmin && role !== 'admin' && !shift.visible_to_all) {
+      const ok = await client.query(
+        'SELECT 1 FROM shift_groups sg JOIN user_groups ug ON ug.group_id = sg.group_id WHERE sg.shift_id = $1 AND ug.user_id = $2 LIMIT 1',
+        [shiftId, userId]
+      );
+      if (ok.rows.length === 0) { await client.query('ROLLBACK'); return { error: [403, 'Questa sessione è riservata a un altro tavolo'] }; }
+    }
+    const existing = await client.query('SELECT id, status FROM assignments WHERE shift_id = $1 AND user_id = $2', [shiftId, userId]);
+    if (existing.rows[0] && ['assigned', 'waiting'].includes(existing.rows[0].status)) {
+      await client.query('ROLLBACK');
+      return { error: [400, asAdmin ? "Questo eroe è già iscritto o in lista d'attesa per questa sessione" : 'Sei già iscritto a questa sessione'] };
+    }
+    const seatsRes = await client.query("SELECT COALESCE(SUM(seats), 0) AS total FROM assignments WHERE shift_id = $1 AND status = 'assigned'", [shiftId]);
+    const status = (parseInt(seatsRes.rows[0].total) + seats) > shift.required_count ? 'waiting' : 'assigned';
+    // Chi si reiscrive dopo essersi cancellato riparte dal fondo della coda (assigned_at = adesso).
+    const { rows: [assignment] } = existing.rows[0]
+      ? await client.query(
+          'UPDATE assignments SET status = $1, hours_volunteered = $2, seats = $3, assigned_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *',
+          [status, hours ?? null, seats, existing.rows[0].id])
+      : await client.query(
+          'INSERT INTO assignments (shift_id, user_id, hours_volunteered, status, seats) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+          [shiftId, userId, hours ?? null, status, seats]);
+    await client.query('COMMIT');
+    return { assignment, status };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+const parseSeats = (seats) => {
+  const n = parseInt(seats, 10);
+  return !Number.isInteger(n) || n < 1 ? 1 : Math.min(n, 6);
+};
+
 // Self-assign to shift — supporta più posti in un'unica iscrizione
 // (es. "prenoto per me + 1 amico"). Se i posti richiesti non entrano
 // nella capienza rimasta, l'intera richiesta va in waiting list.
 const assignShift = async (req, res) => {
   const { shift_id, hours_volunteered, seats } = req.body;
-  const user_id = req.user.id;
-
-  if (!shift_id) {
-    return res.status(400).json({ error: 'Shift ID required' });
-  }
-
-  // Valida il numero di posti richiesti (1-6, intero)
-  let requestedSeats = parseInt(seats, 10);
-  if (!Number.isInteger(requestedSeats) || requestedSeats < 1) requestedSeats = 1;
-  if (requestedSeats > 6) requestedSeats = 6;
-
+  if (!shift_id) return res.status(400).json({ error: 'Shift ID required' });
+  const requestedSeats = parseSeats(seats);
   try {
-    // Check if already assigned or waiting (active)
-    const existingAssignment = await pool.query(
-      'SELECT id, status FROM assignments WHERE shift_id = $1 AND user_id = $2',
-      [shift_id, user_id]
-    );
+    const r = await registerInShift({ shiftId: shift_id, userId: req.user.id, seats: requestedSeats, hours: hours_volunteered, asAdmin: false, role: req.user.role });
+    if (r.error) return res.status(r.error[0]).json({ error: r.error[1] });
+    res.status(201).json({ message: r.status === 'waiting' ? 'Added to waiting list' : 'Assigned to shift', assignment: r.assignment });
 
-    if (existingAssignment.rows.length > 0 && ['assigned', 'waiting'].includes(existingAssignment.rows[0].status)) {
-      return res.status(400).json({ error: 'Already registered to this shift' });
-    }
-
-    // Determina se i posti richiesti entrano nella capienza rimasta
-    const [shiftRes, seatsRes] = await Promise.all([
-      pool.query('SELECT required_count FROM shifts WHERE id = $1', [shift_id]),
-      pool.query("SELECT COALESCE(SUM(seats), 0) as total FROM assignments WHERE shift_id = $1 AND status = 'assigned'", [shift_id]),
+    // Email di conferma in background (non blocca la risposta)
+    const [{ rows: [shift] }, { rows: [user] }] = await Promise.all([
+      pool.query('SELECT s.start_time, l.name AS location_name FROM shifts s JOIN locations l ON s.location_id = l.id WHERE s.id = $1', [shift_id]),
+      pool.query('SELECT email, name FROM users WHERE id = $1', [req.user.id]),
     ]);
-
-    if (shiftRes.rows.length === 0) {
-      return res.status(404).json({ error: 'Shift not found' });
-    }
-    const requiredCount = shiftRes.rows[0].required_count;
-    const currentAssignedSeats = parseInt(seatsRes.rows[0].total);
-    const newStatus = (currentAssignedSeats + requestedSeats) > requiredCount ? 'waiting' : 'assigned';
-
-    let result;
-    if (existingAssignment.rows.length > 0) {
-      result = await pool.query(
-        'UPDATE assignments SET status = $1, hours_volunteered = $2, seats = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *',
-        [newStatus, hours_volunteered, requestedSeats, existingAssignment.rows[0].id]
-      );
-    } else {
-      result = await pool.query(
-        'INSERT INTO assignments (shift_id, user_id, hours_volunteered, status, seats) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [shift_id, user_id, hours_volunteered, newStatus, requestedSeats]
-      );
-    }
-
-    // Prefetch email data in parallel (fast, before responding)
-    const [shiftDetails, userDetails] = await Promise.all([
-      pool.query(
-        'SELECT s.*, l.name as location_name FROM shifts s JOIN locations l ON s.location_id = l.id WHERE s.id = $1',
-        [shift_id]
-      ),
-      pool.query('SELECT email, name FROM users WHERE id = $1', [user_id]),
-    ]);
-
-    // ✅ Respond immediately — don't block on email delivery
-    res.status(201).json({ message: newStatus === 'waiting' ? 'Added to waiting list' : 'Assigned to shift', assignment: result.rows[0] });
-
-    // Send confirmation email in background (non-blocking)
-    const shift = shiftDetails.rows[0];
-    const user = userDetails.rows[0];
-    const startTime = new Date(shift.start_time).toLocaleString('it-IT');
     const seatsNote = requestedSeats > 1 ? ` (${requestedSeats} posti)` : '';
-    const subject = newStatus === 'waiting' ? '⏳ Sei in lista d\'attesa' : '✅ Prenotazione confermata';
-    const body = newStatus === 'waiting'
-      ? `Ciao ${user.name},\n\nLa sessione è al completo, sei stato aggiunto alla lista d'attesa${seatsNote}!\n\nSede: ${shift.location_name}\nOrario: ${startTime}\n\nSe si libera un posto verrai promosso automaticamente.`
-      : `Ciao ${user.name},\n\nSei stato iscritto al turno${seatsNote}!\n\nSede: ${shift.location_name}\nOrario: ${startTime}\n\nGrazie per il tuo contributo!`;
+    const subject = r.status === 'waiting' ? "⏳ Sei in lista d'attesa" : '✅ Iscrizione confermata';
+    const body = r.status === 'waiting'
+      ? `Ciao ${user.name},\n\nla sessione è al completo: sei in lista d'attesa${seatsNote}.\n\nDove: ${shift.location_name}\nQuando: ${fmtRome(shift.start_time)}\n\nSe si libera un posto passi automaticamente tra gli iscritti e ti avvisiamo.`
+      : `Ciao ${user.name},\n\nsei iscritto alla sessione${seatsNote}!\n\nDove: ${shift.location_name}\nQuando: ${fmtRome(shift.start_time)}\n\nCi vediamo al tavolo!`;
     sendEmail(user.email, subject, body).catch(emailErr => console.error('Email send error (non-fatal):', emailErr));
-
   } catch (err) {
     console.error('Assign shift error:', err);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Failed to assign shift' });
-    }
+    if (!res.headersSent) res.status(500).json({ error: 'Failed to assign shift' });
   }
 };
 
@@ -89,49 +122,11 @@ const assignShift = async (req, res) => {
 const adminAssignUser = async (req, res) => {
   const { shiftId } = req.params;
   const { user_id, seats } = req.body;
-
   if (!user_id) return res.status(400).json({ error: 'user_id richiesto' });
-
-  let requestedSeats = parseInt(seats, 10);
-  if (!Number.isInteger(requestedSeats) || requestedSeats < 1) requestedSeats = 1;
-  if (requestedSeats > 6) requestedSeats = 6;
-
   try {
-    const existingAssignment = await pool.query(
-      'SELECT id, status FROM assignments WHERE shift_id = $1 AND user_id = $2',
-      [shiftId, user_id]
-    );
-    if (existingAssignment.rows.length > 0 && ['assigned', 'waiting'].includes(existingAssignment.rows[0].status)) {
-      return res.status(400).json({ error: "Questo eroe è già iscritto o in lista d'attesa per questa sessione" });
-    }
-
-    const [shiftRes, seatsRes] = await Promise.all([
-      pool.query('SELECT required_count FROM shifts WHERE id = $1', [shiftId]),
-      pool.query("SELECT COALESCE(SUM(seats), 0) as total FROM assignments WHERE shift_id = $1 AND status = 'assigned'", [shiftId]),
-    ]);
-    if (shiftRes.rows.length === 0) return res.status(404).json({ error: 'Shift not found' });
-
-    const requiredCount = shiftRes.rows[0].required_count;
-    const currentAssignedSeats = parseInt(seatsRes.rows[0].total);
-    const newStatus = (currentAssignedSeats + requestedSeats) > requiredCount ? 'waiting' : 'assigned';
-
-    let result;
-    if (existingAssignment.rows.length > 0) {
-      result = await pool.query(
-        'UPDATE assignments SET status = $1, seats = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 RETURNING *',
-        [newStatus, requestedSeats, existingAssignment.rows[0].id]
-      );
-    } else {
-      result = await pool.query(
-        'INSERT INTO assignments (shift_id, user_id, status, seats) VALUES ($1, $2, $3, $4) RETURNING *',
-        [shiftId, user_id, newStatus, requestedSeats]
-      );
-    }
-
-    res.status(201).json({
-      message: newStatus === 'waiting' ? 'Aggiunto in lista di attesa' : 'Iscritto',
-      assignment: result.rows[0],
-    });
+    const r = await registerInShift({ shiftId, userId: user_id, seats: parseSeats(seats), asAdmin: true, role: 'admin' });
+    if (r.error) return res.status(r.error[0]).json({ error: r.error[1] });
+    res.status(201).json({ message: r.status === 'waiting' ? 'Aggiunto in lista di attesa' : 'Iscritto', assignment: r.assignment });
   } catch (err) {
     console.error('Admin assign user error:', err);
     res.status(500).json({ error: "Errore nell'iscrizione manuale" });
@@ -175,47 +170,7 @@ const cancelAssignment = async (req, res) => {
       ['cancelled', id]
     );
 
-    // Promuovi in ordine di arrivo chi è in waiting list, finché i posti liberati bastano
-    if (wasAssigned) {
-      const seatsRes = await pool.query(
-        "SELECT COALESCE(SUM(seats), 0) as total FROM assignments WHERE shift_id = $1 AND status = 'assigned'",
-        [assignment.shift_id]
-      );
-      let freeCapacity = assignment.required_count - parseInt(seatsRes.rows[0].total);
-
-      const waitingRes = await pool.query(
-        `SELECT id, user_id, seats FROM assignments
-         WHERE shift_id = $1 AND status = 'waiting'
-         ORDER BY assigned_at ASC`,
-        [assignment.shift_id]
-      );
-
-      for (const candidate of waitingRes.rows) {
-        if (candidate.seats > freeCapacity) break; // FIFO: non si salta la fila
-        await pool.query(
-          "UPDATE assignments SET status = 'assigned', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
-          [candidate.id]
-        );
-        freeCapacity -= candidate.seats;
-
-        // Notifica via email (non bloccante)
-        const [shiftDetails, userDetails] = await Promise.all([
-          pool.query(
-            'SELECT s.*, l.name as location_name FROM shifts s JOIN locations l ON s.location_id = l.id WHERE s.id = $1',
-            [assignment.shift_id]
-          ),
-          pool.query('SELECT email, name FROM users WHERE id = $1', [candidate.user_id]),
-        ]);
-        const shift = shiftDetails.rows[0];
-        const user = userDetails.rows[0];
-        const startTime = new Date(shift.start_time).toLocaleString('it-IT');
-        sendEmail(
-          user.email,
-          '🎉 Sei stato promosso dalla lista d\'attesa!',
-          `Ciao ${user.name},\n\nSi è liberato un posto e sei stato promosso automaticamente!\n\nSede: ${shift.location_name}\nOrario: ${startTime}`
-        ).catch(emailErr => console.error('Email send error (non-fatal):', emailErr));
-      }
-    }
+    if (wasAssigned) notifyPromoted(await promoteWaiting(assignment.shift_id));
 
     res.json({ message: 'Assignment cancelled', assignment: result.rows[0] });
   } catch (err) {
@@ -249,4 +204,4 @@ const getUserAssignments = async (req, res) => {
   }
 };
 
-module.exports = { assignShift, adminAssignUser, cancelAssignment, getUserAssignments };
+module.exports = { assignShift, adminAssignUser, cancelAssignment, getUserAssignments, promoteWaiting, notifyPromoted };

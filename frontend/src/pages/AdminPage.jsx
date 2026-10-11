@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { shiftsAPI, locationsAPI, adminAPI, authAPI, groupsAPI, assignmentsAPI, contentAPI } from '../services/api';
+import { shiftsAPI, locationsAPI, adminAPI, authAPI, groupsAPI, assignmentsAPI, contentAPI, sheetsAPI } from '../services/api';
 import SchedeAdminTab from './SchedeAdminTab';
 import ThemeToggle from '../components/ThemeToggle';
+import GameTable from '../components/GameTable';
 
 function getWeekStart(date) {
   const d = new Date(date);
@@ -750,7 +751,7 @@ function SessionsSection({ locations }) {
               <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: 'var(--text-dim)' }}>⚔️ {s.assigned_users.map(u => u.seats > 1 ? `${u.name} (${u.seats})` : u.name).join(', ')}</p>
             )}
           </div>
-          <div onClick={e => e.stopPropagation()} className="bg-frame" style={{ display: 'flex', gap: '4px', marginLeft: '8px', flexShrink: 0 }}>
+          <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: '4px', marginLeft: '8px', flexShrink: 0 }}>
             {!isCancelled && (
               <button onClick={() => startEditSession(s)} title="Modifica"
                 style={{ width: '30px', height: '30px', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: '0.85rem' }}>✏️</button>
@@ -1500,13 +1501,19 @@ function GroupsSection() {
   const [memberIds, setMemberIds] = useState([]);
   const [savingMembers, setSavingMembers] = useState(false);
   const [copiedGroupId, setCopiedGroupId] = useState(null);
+  const [heroOf, setHeroOf] = useState({});
+  const [view, setView] = useState('tavoli');
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [gRes, hRes] = await Promise.all([groupsAPI.getGroups(), adminAPI.getUsers()]);
+      const [gRes, hRes, sRes] = await Promise.all([groupsAPI.getGroups(), adminAPI.getUsers(), sheetsAPI.getSheets().catch(() => ({ data: [] }))]);
       setGroups(gRes.data);
       setHeroes(hRes.data);
+      // Eroe scelto da ciascun giocatore = scheda a cui e' autorizzato nominalmente.
+      const map = {};
+      for (const sh of sRes.data) for (const u of (sh.users || [])) if (!map[u.id]) map[u.id] = { name: sh.name, klass: sh.klass, image: sh.image_path };
+      setHeroOf(map);
     } catch { alert('Errore nel caricamento gruppi'); }
     finally { setLoading(false); }
   }, []);
@@ -1572,7 +1579,14 @@ function GroupsSection() {
         <h2 className="bg-cartouche" style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 6px', fontSize: '1.05rem' }}>👥 Gruppi</h2>
         <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '0 0 16px' }}>
           Crea gruppi di eroi (es. "Tavolo Rosso", "Junior") per riservare certe sessioni solo a loro.
+          Il ritratto al tavolo è l’eroe assegnato al giocatore nella tab 🎭 Schede.
         </p>
+        <div style={{ display: 'flex', gap: '4px', margin: '0 auto 14px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '10px', width: 'fit-content', border: '1px solid var(--border)' }}>
+          {[['tavoli', '🪑 Tavoli'], ['elenco', '📋 Elenco']].map(([v, l]) => (
+            <button key={v} type="button" onClick={() => setView(v)}
+              style={{ padding: '6px 16px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', background: view === v ? 'var(--gold)' : 'transparent', color: view === v ? 'var(--on-gold)' : 'var(--text-muted)' }}>{l}</button>
+          ))}
+        </div>
         <form onSubmit={handleCreate} style={{ display: 'flex', gap: '8px', marginBottom: '18px' }}>
           <input type="text" value={newName} onChange={e => setNewName(e.target.value)}
             placeholder="Nome nuovo gruppo" style={{ ...IS, flex: 1 }} />
@@ -1581,7 +1595,23 @@ function GroupsSection() {
 
         {loading ? <p style={{ color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Caricamento...</p>
           : groups.length === 0 ? <p style={{ color: 'var(--text-dim)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Nessun gruppo ancora creato.</p>
-          : (
+          : view === 'tavoli' ? (
+            <div className="gt-grid">
+              {groups.map(g => (
+                <GameTable key={g.id} name={g.name}
+                  members={g.members.map(m => ({ ...m, hero: heroOf[m.id] }))}
+                  footer={<>
+                    <button onClick={() => openMembers(g)} style={btnGray}>👥 Membri</button>
+                    <button onClick={() => copyEmails(g)} disabled={g.members.length === 0} style={{ ...btnGray, opacity: g.members.length === 0 ? 0.5 : 1 }}>
+                      {copiedGroupId === g.id ? '✅ Copiato!' : '📋 Email'}
+                    </button>
+                    <button onClick={() => handleDelete(g)} title="Elimina gruppo" aria-label="Elimina gruppo"
+                      style={{ width: '34px', height: '34px', borderRadius: '7px', background: 'var(--bg-card)', border: '1px solid var(--border)', cursor: 'pointer' }}>🗑️</button>
+                  </>}
+                />
+              ))}
+            </div>
+          ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {groups.map(g => (
                 <div key={g.id} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'var(--bg-page)', border: '1px solid var(--border)', borderRadius: '8px' }}>

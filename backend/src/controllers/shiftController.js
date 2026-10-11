@@ -146,6 +146,9 @@ const updateShift = async (req, res) => {
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Shift not found' });
     await syncShiftGroups(id, visible_to_all !== false, group_ids);
+    // Se l'admin ha aumentato i posti, chi aspettava entra subito (in ordine d'arrivo).
+    const { promoteWaiting, notifyPromoted } = require('./assignmentController');
+    notifyPromoted(await promoteWaiting(id));
     res.json({ message: 'Shift updated', shift: result.rows[0] });
   } catch (err) {
     console.error('Update shift error:', err);

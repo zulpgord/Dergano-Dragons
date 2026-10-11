@@ -9,16 +9,19 @@ const register = async (req, res) => {
   if (!email || !password || !name || !name.trim()) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
+  const cleanEmail = String(email).trim().toLowerCase();
   if (!privacy_accepted) {
     return res.status(400).json({ error: "Devi accettare l'informativa privacy per registrarti" });
   }
   try {
+    const dup = await pool.query('SELECT 1 FROM users WHERE lower(email) = $1', [cleanEmail]);
+    if (dup.rows.length) return res.status(400).json({ error: 'Email already exists' });
     const hashedPassword = await bcrypt.hash(password, 10);
     // Ci si registra sempre come eroe: admin si diventa solo se un altro admin lo promuove.
     const userRole = 'volunteer';
     const result = await pool.query(
       'INSERT INTO users (email, password_hash, name, role, privacy_accepted_at, newsletter_opt_in) VALUES ($1, $2, $3, $4, NOW(), $5) RETURNING id, email, name, role',
-      [email, hashedPassword, name.trim(), userRole, newsletter === true]
+      [cleanEmail, hashedPassword, name.trim(), userRole, newsletter === true]
     );
     const user = result.rows[0];
     const token = jwt.sign(
@@ -42,7 +45,7 @@ const login = async (req, res) => {
     return res.status(400).json({ error: 'Email and password required' });
   }
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await pool.query('SELECT * FROM users WHERE lower(email) = lower($1) ORDER BY id LIMIT 1', [String(email).trim()]);
     const user = result.rows[0];
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);

@@ -1,9 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ThemeToggle from '../components/ThemeToggle';
 import { sheetsAPI } from '../services/api';
 import { DOMANDE, CLASSI, calcolaRisultato } from '../data/quizPersonaggi';
 import './PersonaggiPage.css';
 
 export default function PersonaggiPage({ autoQuiz = false }) {
+  const navigate = useNavigate();
+  const isAdmin = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}').role === 'admin'; } catch { return false; } })();
   const [schede, setSchede] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -106,6 +110,13 @@ export default function PersonaggiPage({ autoQuiz = false }) {
   // --------------------------------------------------------------------- UI
   return (
     <div className="pg-page">
+      <nav className="pg-nav">
+        <button type="button" className="pg-indietro" onClick={() => navigate('/dashboard')}>← Torna alle sessioni</button>
+        <span className="pg-nav-destra">
+          {isAdmin && <button type="button" className="pg-indietro" onClick={() => navigate('/admin')}>🛡️ Admin</button>}
+          <ThemeToggle />
+        </span>
+      </nav>
       <header className="pg-hero">
         <p className="pg-occhiello">Dergano &amp; Dragons</p>
         <h1>Scegli il tuo eroe</h1>

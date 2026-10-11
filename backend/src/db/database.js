@@ -153,6 +153,14 @@ async function initializeDatabase() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS privacy_accepted_at TIMESTAMP DEFAULT NULL;
     `);
 
+    // Migration: eliminare un account (anche di un admin che ha creato sessioni) non deve fallire.
+    await client.query(`
+      ALTER TABLE shifts DROP CONSTRAINT IF EXISTS shifts_created_by_fkey;
+      ALTER TABLE shifts ADD CONSTRAINT shifts_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+      ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_recipient_id_fkey;
+      ALTER TABLE notifications ADD CONSTRAINT notifications_recipient_id_fkey FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE;
+    `);
+
     // Migration: recupero password con link monouso (nel DB resta solo l'hash del token)
     // e consenso separato alla newsletter, revocabile dal link in ogni email.
     await client.query(`
