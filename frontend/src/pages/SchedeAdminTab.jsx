@@ -7,9 +7,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { sheetsAPI, groupsAPI, adminAPI } from '../services/api';
 
 const cardSty = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px' };
-const btnGold = { background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.85rem', padding: '10px 20px', cursor: 'pointer' };
-const btnGray = { background: 'none', color: '#8a7f6c', border: '1px solid var(--border)', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.85rem', padding: '10px 20px', cursor: 'pointer' };
-const thSty = { textAlign: 'left', padding: '8px 6px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#8a7f6c', fontWeight: 700 };
+const btnGold = { background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.85rem', padding: '10px 20px', cursor: 'pointer' };
+const btnGray = { background: 'none', color: 'var(--text-dim)', border: '1px solid var(--border)', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.85rem', padding: '10px 20px', cursor: 'pointer' };
+const thSty = { textAlign: 'left', padding: '8px 6px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-dim)', fontWeight: 700 };
 const tdSty = { padding: '10px 6px', verticalAlign: 'top', fontSize: '0.85rem' };
 const selSty = { minWidth: 140, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.8rem' };
 
@@ -82,23 +82,23 @@ export default function SchedeAdminTab() {
 
   return (
     <div style={cardSty}>
-      <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 6px', fontSize: '1.05rem' }}>
+      <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 6px', fontSize: '1.05rem' }}>
         🎭 Schede personaggio
       </h2>
-      <p style={{ fontSize: '0.78rem', color: '#8a7f6c', margin: '0 0 14px', lineHeight: 1.5 }}>
+      <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '0 0 14px', lineHeight: 1.5 }}>
         Un eroe vede una scheda se e' <strong>aperta a tutti</strong>, oppure se appartiene a
         un <strong>gruppo autorizzato</strong>, oppure se lo hai <strong>autorizzato di persona</strong>.
         Di default sono tutte chiuse. La pagina pubblica e' <code>/personaggi</code>.
       </p>
 
       {loading ? (
-        <p style={{ color: '#8a7f6c', fontSize: '0.85rem' }}>Caricamento schede...</p>
+        <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Caricamento schede...</p>
       ) : (
         <>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
             <button onClick={() => tutte(true)} style={btnGold}>👁 Apri tutte</button>
             <button onClick={() => tutte(false)} style={btnGray}>🔒 Chiudi tutte</button>
-            {msg && <span style={{ color: '#2b6663', fontSize: '0.85rem', fontWeight: 700 }}>✅ {msg}</span>}
+            {msg && <span style={{ color: 'var(--green)', fontSize: '0.85rem', fontWeight: 700 }}>✅ {msg}</span>}
           </div>
 
           <div style={{ overflowX: 'auto' }}>
@@ -117,7 +117,7 @@ export default function SchedeAdminTab() {
                   <tr key={s.id} style={{ borderTop: '1px solid var(--border)' }}>
                     <td style={tdSty}>
                       <strong>{s.name}</strong><br />
-                      <span style={{ fontSize: '0.75rem', color: '#8a7f6c' }}>{s.klass} · {s.race}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{s.klass} · {s.race}</span>
                     </td>
                     <td style={tdSty}>
                       <input type="checkbox" checked={!!s.visible_to_all}
@@ -153,7 +153,7 @@ export default function SchedeAdminTab() {
             </table>
           </div>
 
-          <p style={{ fontSize: '0.75rem', color: '#8a7f6c', marginTop: '14px', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '14px', lineHeight: 1.5 }}>
             Tieni premuto Ctrl (Cmd su Mac) per selezionare piu' gruppi o piu' eroi.
             I menu si disattivano quando la scheda e' aperta a tutti: in quel caso
             l'autorizzazione puntuale non serve.

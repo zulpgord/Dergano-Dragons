@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import AccountModal from '../components/AccountModal';
+import ThemeToggle from '../components/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
 import { shiftsAPI, assignmentsAPI, authAPI } from '../services/api';
 
@@ -12,9 +13,9 @@ function DerganoHeader() {
         alt="Dergano & Dragons"
         style={{ height: '70px', width: 'auto', objectFit: 'contain' }}
       />
-      <div className="dg-header-sep" style={{ width: '1px', height: '32px', background: '#ddd0b3', flexShrink: 0 }} />
+      <div className="dg-header-sep" style={{ width: '1px', height: '32px', background: 'var(--border)', flexShrink: 0 }} />
       <div className="dg-subtitle" style={{
-        fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.55rem', color: '#6b5a3c',
+        fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.55rem', color: 'var(--text-muted)',
         letterSpacing: '3px', lineHeight: 1.4,
       }}>
         SESSION<br/>MANAGER
@@ -83,12 +84,12 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
     : fullyC ? 'rgba(169,121,26,0.18)'
     : partial ? 'rgba(47,125,58,0.14)'
     : 'rgba(179,38,30,0.12)';
-  const statusText = session.cancelled ? '#a23b22'
-    : isAssigned ? '#2b6663'
-    : isWaitingMe ? '#a23b22'
-    : fullyC ? '#b0801a'
-    : partial ? '#2b6663'
-    : '#a23b22';
+  const statusText = session.cancelled ? 'var(--red)'
+    : isAssigned ? 'var(--green)'
+    : isWaitingMe ? 'var(--red)'
+    : fullyC ? 'var(--gold)'
+    : partial ? 'var(--green)'
+    : 'var(--red)';
 
   return (
     <div
@@ -102,9 +103,10 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
     >
       <div
         onClick={e => e.stopPropagation()}
+        className="bg-frame"
         style={{
-          background: 'var(--bg-card, #fffbf2)',
-          border: '1px solid var(--border-gold, #b0801a)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-gold, var(--gold))',
           borderRadius: '12px',
           boxShadow: '0 8px 32px rgba(80,60,20,0.25)',
           width: '100%',
@@ -113,14 +115,14 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
         }}
       >
         {session.cancelled && (
-          <div style={{ marginBottom: '12px', padding: '10px', background: 'rgba(169,121,26,0.14)', border: '1px solid rgba(169,121,26,0.3)', borderRadius: '8px', color: '#a23b22', fontSize: '0.85rem', textAlign: 'center' }}>
+          <div style={{ marginBottom: '12px', padding: '10px', background: 'rgba(169,121,26,0.14)', border: '1px solid rgba(169,121,26,0.3)', borderRadius: '8px', color: 'var(--red)', fontSize: '0.85rem', textAlign: 'center' }}>
             ⚠️ Questa sessione è stata annullata
           </div>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
           <div>
-            <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: 0, fontSize: '1.1rem' }}>
+            <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: 0, fontSize: '1.1rem' }}>
               {session.location_name}
             </h2>
             {session.has_pizza && (
@@ -129,10 +131,10 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
               </span>
             )}
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#8a7f6c', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1 }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1 }}>×</button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px', color: 'var(--text-muted, #6b5a3c)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px', color: 'var(--text-muted)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>📅</span>
             <span style={{ fontSize: '0.9rem', textTransform: 'capitalize' }}>{fmtDate(session.start_time)}</span>
@@ -156,21 +158,21 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
 
         {assignedUsers.length > 0 && (
           <div style={{ marginBottom: waitingUsers.length > 0 ? '12px' : '20px' }}>
-            <p style={{ fontSize: '0.72rem', color: '#8a7f6c', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
               Avventurieri
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {assignedUsers.map(u => (
-                <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text, #262019)' }}>
+                <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text)' }}>
                   <span style={{
                     width: '22px', height: '22px', borderRadius: '50%',
                     background: 'rgba(169,121,26,0.14)', border: '1px solid rgba(169,121,26,0.3)',
-                    color: '#b0801a', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
                   }}>
                     {u.name.charAt(0).toUpperCase()}
                   </span>
-                  {u.name}{u.seats > 1 && <span style={{ color: '#8a7f6c', fontSize: '0.78rem' }}> (+{u.seats - 1}, {u.seats} posti)</span>}
+                  {u.name}{u.seats > 1 && <span style={{ color: 'var(--text-dim)', fontSize: '0.78rem' }}> (+{u.seats - 1}, {u.seats} posti)</span>}
                 </div>
               ))}
             </div>
@@ -179,16 +181,16 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
 
         {waitingUsers.length > 0 && (
           <div style={{ marginBottom: '20px' }}>
-            <p style={{ fontSize: '0.72rem', color: '#a23b22', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+            <p style={{ fontSize: '0.72rem', color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
               ⏳ Lista d'attesa
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {waitingUsers.map((u, i) => (
-                <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-muted, #6b5a3c)' }}>
+                <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                   <span style={{
                     width: '22px', height: '22px', borderRadius: '50%',
                     background: 'rgba(169,121,26,0.10)', border: '1px dashed rgba(169,121,26,0.4)',
-                    color: '#a23b22', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: '0.72rem', fontWeight: 700, flexShrink: 0,
                   }}>
                     {i + 1}
@@ -201,7 +203,7 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
         )}
 
         {session.cancelled ? (
-          <div style={{ background: 'rgba(169,121,26,0.12)', border: '1px solid rgba(169,121,26,0.25)', borderRadius: '8px', padding: '12px', textAlign: 'center', color: '#a23b22', fontSize: '0.85rem' }}>
+          <div style={{ background: 'rgba(169,121,26,0.12)', border: '1px solid rgba(169,121,26,0.25)', borderRadius: '8px', padding: '12px', textAlign: 'center', color: 'var(--red)', fontSize: '0.85rem' }}>
             Questa sessione è stata annullata dall'organizzazione.
           </div>
         ) : isRegistered ? (
@@ -210,13 +212,13 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
               background: isWaitingMe ? 'rgba(169,121,26,0.10)' : 'rgba(36,85,164,0.10)',
               border: `1px solid ${isWaitingMe ? 'rgba(169,121,26,0.3)' : 'rgba(36,85,164,0.3)'}`,
               borderRadius: '8px', padding: '10px', textAlign: 'center',
-              color: isWaitingMe ? '#a23b22' : '#2b6663', fontSize: '0.88rem', fontWeight: 600,
+              color: isWaitingMe ? 'var(--red)' : 'var(--green)', fontSize: '0.88rem', fontWeight: 600,
             }}>
               {isWaitingMe ? '⏳ Sei in lista d\'attesa — verrai promosso se si libera un posto' : '✓ Sei registrato a questa sessione'}
             </div>
             <button
               onClick={() => { onCancel(myAssignment.id); onClose(); }}
-              style={{ width: '100%', padding: '10px', background: 'rgba(179,38,30,0.10)', color: '#a23b22', border: '1px solid rgba(179,38,30,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem' }}
+              style={{ width: '100%', padding: '10px', background: 'rgba(179,38,30,0.10)', color: 'var(--red)', border: '1px solid rgba(179,38,30,0.3)', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem' }}
             >
               {isWaitingMe ? 'Esci dalla lista d\'attesa' : 'Annulla partecipazione'}
             </button>
@@ -224,13 +226,13 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.8rem', color: '#6b5a3c' }}>Posti da prenotare:</span>
+              <span style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Posti da prenotare:</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <button type="button" onClick={() => setSeatsWanted(s => Math.max(1, s - 1))}
-                  style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: '#b0801a', fontWeight: 700, cursor: 'pointer' }}>−</button>
+                  style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--gold)', fontWeight: 700, cursor: 'pointer' }}>−</button>
                 <span style={{ minWidth: '20px', textAlign: 'center', fontWeight: 700, color: 'var(--text)' }}>{seatsWanted}</span>
                 <button type="button" onClick={() => setSeatsWanted(s => Math.min(6, s + 1))}
-                  style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: '#b0801a', fontWeight: 700, cursor: 'pointer' }}>+</button>
+                  style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--gold)', fontWeight: 700, cursor: 'pointer' }}>+</button>
               </div>
             </div>
             <button
@@ -242,7 +244,7 @@ function SessionModal({ session, userAssignments, onClose, onAssign, onCancel })
             >
               <img src="/dado.png" alt="" />
             </button>
-            <span style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.85rem', fontWeight: 700, color: '#b0801a', textAlign: 'center' }}>
+            <span style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.85rem', fontWeight: 700, color: 'var(--gold)', textAlign: 'center' }}>
               {isBooking ? '⏳ Registrazione...' : fullyC ? 'Iscriviti in lista d\'attesa' : 'Unisciti all\'avventura'}
             </span>
           </div>
@@ -401,7 +403,7 @@ export default function DashboardPage() {
   const fmtDate = (dt) => new Date(dt).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-page, #f4ead4)' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-page)' }}>
       <SessionModal
         session={selectedSession}
         userAssignments={userAssignments}
@@ -418,7 +420,7 @@ export default function DashboardPage() {
           zIndex: 100, padding: '12px 24px', borderRadius: '10px', fontWeight: 700,
           fontSize: '0.9rem', whiteSpace: 'nowrap',
           background: toast.startsWith('❌') ? 'rgba(179,38,30,0.95)' : 'rgba(47,125,58,0.95)',
-          color: '#fffbf2',
+          color: 'var(--on-gold)',
           border: `1px solid ${toast.startsWith('❌') ? 'rgba(179,38,30,0.8)' : 'rgba(47,125,58,0.8)'}`,
           boxShadow: '0 4px 16px rgba(80,60,20,0.25)',
         }}>
@@ -427,8 +429,8 @@ export default function DashboardPage() {
       )}
 
       <header style={{
-        background: 'linear-gradient(180deg, #fffbf2 0%, #f4ead4 100%)',
-        borderBottom: '2px solid #ddd0b3',
+        background: 'linear-gradient(180deg, var(--bg-card) 0%, var(--bg-page) 100%)',
+        borderBottom: '2px solid var(--border)',
         padding: '14px 24px',
         boxShadow: '0 2px 10px rgba(80,60,20,0.08)',
       }}>
@@ -438,8 +440,8 @@ export default function DashboardPage() {
             <button
               onClick={() => navigate('/personaggi')}
               style={{
-                background: 'var(--bg-card, #fffbf2)',
-                color: '#2b6663', border: '1px solid #2b6663', borderRadius: '8px',
+                background: 'var(--bg-card)',
+                color: 'var(--green)', border: '1px solid var(--green)', borderRadius: '8px',
                 padding: '6px 14px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700,
                 fontSize: '0.8rem', cursor: 'pointer', letterSpacing: '0.5px',
               }}
@@ -449,8 +451,8 @@ export default function DashboardPage() {
             <button
               onClick={() => navigate('/quiz')}
               style={{
-                background: 'var(--bg-card, #fffbf2)',
-                color: '#b0801a', border: '1px solid #b0801a', borderRadius: '8px',
+                background: 'var(--bg-card)',
+                color: 'var(--gold)', border: '1px solid var(--gold)', borderRadius: '8px',
                 padding: '6px 14px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700,
                 fontSize: '0.8rem', cursor: 'pointer', letterSpacing: '0.5px',
               }}
@@ -461,8 +463,8 @@ export default function DashboardPage() {
               <button
                 onClick={() => navigate('/admin')}
                 style={{
-                  background: 'linear-gradient(135deg, #b0801a, #c99a35)',
-                  color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '8px',
+                  background: 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+                  color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '8px',
                   padding: '6px 14px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700,
                   fontSize: '0.8rem', cursor: 'pointer', letterSpacing: '0.5px',
                 }}
@@ -470,23 +472,24 @@ export default function DashboardPage() {
                 🛡️ Admin
               </button>
             )}
-            <span style={{ color: '#6b5a3c', fontSize: '0.88rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.88rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
               ⚔️ {user.name}
             </span>
+            <ThemeToggle />
             <button
               onClick={handleLogout}
-              style={{ background: 'rgba(179,38,30,0.10)', color: '#a23b22', border: '1px solid rgba(179,38,30,0.3)', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontSize: '0.82rem' }}
+              style={{ background: 'rgba(179,38,30,0.10)', color: 'var(--red)', border: '1px solid rgba(179,38,30,0.3)', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontSize: '0.82rem' }}
             >
               Esci
             </button>
           </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px', maxWidth: '1650px', margin: '4px auto 0', padding: '0 16px', fontSize: '0.72rem' }}>
-          <button onClick={() => setShowAccount(true)} style={{ background: 'none', border: 'none', color: '#b0801a', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.72rem', padding: 0, fontWeight: 700, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+          <button onClick={() => setShowAccount(true)} style={{ background: 'none', border: 'none', color: 'var(--gold)', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.72rem', padding: 0, fontWeight: 700, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
             Il mio account
           </button>
-          <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#8a7f6c', textDecoration: 'underline' }}>Privacy</a>
-          <button onClick={handleDeleteAccount} style={{ background: 'none', border: 'none', color: '#8a7f6c', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.72rem', padding: 0, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-dim)', textDecoration: 'underline' }}>Privacy</a>
+          <button onClick={handleDeleteAccount} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.72rem', padding: 0, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
             Elimina il mio account
           </button>
         </div>
@@ -496,16 +499,16 @@ export default function DashboardPage() {
       <main style={{ maxWidth: '1650px', margin: '0 auto', padding: '24px 16px' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <button onClick={prevMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: '#b0801a', fontSize: '1.2rem', cursor: 'pointer' }}>‹</button>
+          <button onClick={prevMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--gold)', fontSize: '1.2rem', cursor: 'pointer' }}>‹</button>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h2 style={{ margin: 0, fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', fontSize: '1.1rem' }}>
+            <h2 style={{ margin: 0, fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', fontSize: '1.1rem' }}>
               {MONTHS_IT[calMonth.month]} {calMonth.year}
             </h2>
-            <button onClick={goToday} style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: '6px', background: 'rgba(169,121,26,0.12)', color: '#b0801a', border: '1px solid rgba(169,121,26,0.3)', cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+            <button onClick={goToday} style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: '6px', background: 'rgba(169,121,26,0.12)', color: 'var(--gold)', border: '1px solid rgba(169,121,26,0.3)', cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
               Oggi
             </button>
           </div>
-          <button onClick={nextMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: '#b0801a', fontSize: '1.2rem', cursor: 'pointer' }}>›</button>
+          <button onClick={nextMonth} style={{ width: '36px', height: '36px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--gold)', fontSize: '1.2rem', cursor: 'pointer' }}>›</button>
         </div>
 
         <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: 'var(--bg-card)', padding: '4px', borderRadius: '10px', width: 'fit-content', border: '1px solid var(--border)' }}>
@@ -516,8 +519,8 @@ export default function DashboardPage() {
               style={{
                 padding: '8px 20px', borderRadius: '8px', fontSize: '0.88rem',
                 fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 600,
-                background: viewMode === mode ? 'linear-gradient(135deg, #b0801a, #c99a35)' : 'transparent',
-                color: viewMode === mode ? '#fffbf2' : '#6b5a3c',
+                background: viewMode === mode ? 'linear-gradient(135deg, var(--gold), var(--gold-light))' : 'transparent',
+                color: viewMode === mode ? 'var(--bg-card)' : 'var(--text-muted)',
                 border: 'none', cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
@@ -527,12 +530,12 @@ export default function DashboardPage() {
         </div>
 
         {error && (
-          <div style={{ background: 'rgba(179,38,30,0.10)', border: '1px solid rgba(179,38,30,0.3)', color: '#a23b22', padding: '12px', borderRadius: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ background: 'rgba(179,38,30,0.10)', border: '1px solid rgba(179,38,30,0.3)', color: 'var(--red)', padding: '12px', borderRadius: '8px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
             <span>{error}</span>
             <button
               onClick={() => loadSessions()}
               disabled={loading}
-              style={{ padding: '7px 16px', borderRadius: '8px', background: 'rgba(179,38,30,0.12)', color: '#a23b22', border: '1px solid rgba(179,38,30,0.35)', cursor: loading ? 'default' : 'pointer', fontWeight: 700, fontSize: '0.82rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', flexShrink: 0, opacity: loading ? 0.5 : 1 }}
+              style={{ padding: '7px 16px', borderRadius: '8px', background: 'rgba(179,38,30,0.12)', color: 'var(--red)', border: '1px solid rgba(179,38,30,0.35)', cursor: loading ? 'default' : 'pointer', fontWeight: 700, fontSize: '0.82rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', flexShrink: 0, opacity: loading ? 0.5 : 1 }}
             >
               {loading ? '⏳ Riprovo...' : '🔄 Riprova'}
             </button>
@@ -540,10 +543,10 @@ export default function DashboardPage() {
         )}
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '64px', color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+          <div style={{ textAlign: 'center', padding: '64px', color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
             <div>⏳ Caricamento...</div>
             {slowLoading && (
-              <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#8a7f6c', maxWidth: '360px', margin: '10px auto 0', lineHeight: 1.5 }}>
+              <div style={{ marginTop: '10px', fontSize: '0.85rem', color: 'var(--text-dim)', maxWidth: '360px', margin: '10px auto 0', lineHeight: 1.5 }}>
                 🐉 Il drago si sta svegliando — il server riparte dopo un periodo di inattività.
                 Possono volerci fino a un minuto: sto già riprovando da solo.
               </div>
@@ -566,7 +569,7 @@ export default function DashboardPage() {
                 <div style={{ flex: 1, minWidth: 0, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '4px' }}>
                   {DAYS_IT.map(d => (
-                    <div key={d} style={{ textAlign: 'center', fontSize: '0.72rem', color: '#8a7f6c', padding: '4px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{d}</div>
+                    <div key={d} style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-dim)', padding: '4px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{d}</div>
                   ))}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px' }}>
@@ -586,7 +589,7 @@ export default function DashboardPage() {
                       >
                         {day && (
                           <>
-                            <p style={{ fontSize: '0.72rem', fontWeight: 700, margin: '0 0 2px 2px', color: isToday ? '#b0801a' : '#8a7f6c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{day}</p>
+                            <p style={{ fontSize: '0.72rem', fontWeight: 700, margin: '0 0 2px 2px', color: isToday ? 'var(--gold)' : 'var(--text-dim)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{day}</p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                               {daySessions.map(s => {
                                 const myA = userAssignments.find(a => a.shift_id === s.id && ['assigned', 'waiting'].includes(a.status));
@@ -600,7 +603,7 @@ export default function DashboardPage() {
                                       fontSize: '0.74rem', padding: '4px 6px', borderRadius: '5px', cursor: 'pointer',
                                       opacity: s.cancelled ? 0.6 : 1,
                                       background: s.cancelled ? 'rgba(169,121,26,0.12)' : 'var(--bg-page)',
-                                      border: isMySession ? '2px solid #2b6663' : isMyWaiting ? '2px dashed #b0801a' : '1px solid var(--border)',
+                                      border: isMySession ? '2px solid var(--green)' : isMyWaiting ? '2px dashed var(--gold)' : '1px solid var(--border)',
                                     }}
                                   >
                                     <div className="calendar-cell-text" style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
@@ -626,25 +629,25 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '14px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <div style={{ width: '28px', height: '6px', borderRadius: '3px' }} className="fill-track"><div className="fill-bar" style={{ width: '40%', height: '100%' }} /></div>
-                    <span style={{ fontSize: '0.72rem', color: '#6b5a3c' }}>Riempimento parziale</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Riempimento parziale</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <div style={{ width: '28px', height: '6px', borderRadius: '3px' }} className="fill-track"><div className="fill-bar full" style={{ width: '100%', height: '100%' }} /></div>
-                    <span style={{ fontSize: '0.72rem', color: '#6b5a3c' }}>Sessione completa</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Sessione completa</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', border: '1.5px solid #2b6663', background: 'var(--bg-page)' }} />
-                    <span style={{ fontSize: '0.72rem', color: '#6b5a3c' }}>Le mie sessioni</span>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', border: '1.5px solid var(--green)', background: 'var(--bg-page)' }} />
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Le mie sessioni</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', border: '1.5px dashed #b0801a', background: 'var(--bg-page)' }} />
-                    <span style={{ fontSize: '0.72rem', color: '#6b5a3c' }}>⏳ In lista d'attesa</span>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '3px', border: '1.5px dashed var(--gold)', background: 'var(--bg-page)' }} />
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>⏳ In lista d'attesa</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(169,121,26,0.25)' }} />
-                    <span style={{ fontSize: '0.72rem', color: '#6b5a3c' }}>⚠ Annullata</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>⚠ Annullata</span>
                   </div>
-                  <span style={{ fontSize: '0.72rem', color: '#8a7f6c', marginLeft: 'auto', fontStyle: 'italic' }}>Clicca una sessione per aprirla</span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginLeft: 'auto', fontStyle: 'italic' }}>Clicca una sessione per aprirla</span>
                 </div>
                 </div>
                 <div className="calendar-side-art-wrap">
@@ -655,12 +658,12 @@ export default function DashboardPage() {
 
             {/* ── LISTA ── */}
             {viewMode === 'lista' && (
-              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
-                <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 16px', fontSize: '1rem' }}>
+              <div className="bg-frame" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
+                <h2 className="bg-cartouche" style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 16px', fontSize: '1rem' }}>
                   ⚔️ Sessioni — {MONTHS_IT[calMonth.month]} {calMonth.year}
                 </h2>
                 {monthSessions.length === 0 ? (
-                  <p style={{ color: '#6b5a3c', textAlign: 'center', padding: '32px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Nessuna sessione in questo mese</p>
+                  <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '32px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Nessuna sessione in questo mese</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {monthSessions.map(s => {
@@ -678,38 +681,38 @@ export default function DashboardPage() {
                         <div key={s.id} style={{
                           padding: '14px', borderRadius: '10px',
                           background: s.cancelled ? 'rgba(169,121,26,0.06)' : 'var(--bg-page)',
-                          border: isMySession ? '1.5px solid #2b6663' : isMyWaiting ? '1.5px dashed #b0801a' : '1px solid var(--border)',
+                          border: isMySession ? '1.5px solid var(--green)' : isMyWaiting ? '1.5px dashed var(--gold)' : '1px solid var(--border)',
                           opacity: s.cancelled ? 0.75 : 1,
                         }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                                <span style={{ fontWeight: 700, fontFamily: 'Titan One, Luckiest Guy, fantasy', color: s.cancelled ? '#8a7f6c' : '#b0801a', fontSize: '0.95rem' }}>
+                                <span style={{ fontWeight: 700, fontFamily: 'Titan One, Luckiest Guy, fantasy', color: s.cancelled ? 'var(--text-dim)' : 'var(--gold)', fontSize: '0.95rem' }}>
                                   {s.location_name}
                                 </span>
-                                <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 600, background: 'rgba(169,121,26,0.10)', color: '#6b5a3c' }}>{statusLabel}</span>
+                                <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 600, background: 'rgba(169,121,26,0.10)', color: 'var(--text-muted)' }}>{statusLabel}</span>
                                 {isMySession && !s.cancelled && (
-                                  <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '12px', background: 'rgba(36,85,164,0.14)', color: '#2b6663', fontWeight: 700 }}>✓ Iscritto</span>
+                                  <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '12px', background: 'rgba(36,85,164,0.14)', color: 'var(--green)', fontWeight: 700 }}>✓ Iscritto</span>
                                 )}
                                 {isMyWaiting && !s.cancelled && (
-                                  <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '12px', background: 'rgba(169,121,26,0.16)', color: '#a23b22', fontWeight: 700 }}>⏳ In lista d'attesa</span>
+                                  <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '12px', background: 'rgba(169,121,26,0.16)', color: 'var(--red)', fontWeight: 700 }}>⏳ In lista d'attesa</span>
                                 )}
                                 {s.has_pizza && <span className="pizza-badge">🍕 Pizza</span>}
                               </div>
-                              <p style={{ margin: '2px 0', fontSize: '0.85rem', color: '#6b5a3c' }}>{fmtDate(s.start_time)}</p>
-                              <p style={{ margin: '2px 0', fontSize: '0.85rem', color: '#6b5a3c' }}>{fmt(s.start_time)} — {fmt(s.end_time)}</p>
+                              <p style={{ margin: '2px 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{fmtDate(s.start_time)}</p>
+                              <p style={{ margin: '2px 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{fmt(s.start_time)} — {fmt(s.end_time)}</p>
                               {!s.cancelled && (
                                 <div style={{ marginTop: '8px', maxWidth: '220px' }}>
                                   <FillBar current={s.assigned_count} total={s.required_count} height={7} />
                                 </div>
                               )}
                               {assignedUsers.length > 0 && !s.cancelled && (
-                                <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#8a7f6c' }}>
+                                <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: 'var(--text-dim)' }}>
                                   ⚔️ {assignedUsers.map(u => u.seats > 1 ? `${u.name} (${u.seats})` : u.name).join(', ')}
                                 </p>
                               )}
                               {waitingUsers.length > 0 && !s.cancelled && (
-                                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#a23b22' }}>
+                                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--red)' }}>
                                   ⏳ Attesa: {waitingUsers.map(u => u.seats > 1 ? `${u.name} (${u.seats})` : u.name).join(', ')}
                                 </p>
                               )}
@@ -720,7 +723,7 @@ export default function DashboardPage() {
                                   onClick={() => handleCancel(myAssignment?.id)}
                                   style={{
                                     marginLeft: '12px', padding: '8px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif',
-                                    background: 'rgba(169,121,26,0.10)', color: '#6b5a3c', border: '1px solid #ddd0b3',
+                                    background: 'rgba(169,121,26,0.10)', color: 'var(--text-muted)', border: '1px solid var(--border)',
                                   }}
                                 >
                                   {isMySession ? '✓ Iscritto' : '⏳ In attesa'}
@@ -739,7 +742,7 @@ export default function DashboardPage() {
                                   >
                                     <img src="/dado.png" alt="Partecipa" />
                                   </button>
-                                  {bookingSessionId === s.id && <span style={{ fontSize: '0.65rem', color: '#8a7f6c' }}>⏳</span>}
+                                  {bookingSessionId === s.id && <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>⏳</span>}
                                 </div>
                               )
                             )}

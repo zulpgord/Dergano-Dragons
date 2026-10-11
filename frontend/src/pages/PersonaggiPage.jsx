@@ -207,7 +207,7 @@ function Riquadro({ s, scaricando, onScarica }) {
   const cl = CLASSI[s.klass] || { emoji: '🎲' };
 
   return (
-    <article className="pg-carta">
+    <article className="pg-carta bg-frame">
       <div className="pg-ritratto">
         {!senzaImmagine ? (
           <img src={s.image_path} alt="" loading="lazy"
@@ -252,7 +252,7 @@ function Questionario({ passo, esito, risposte, onRispondi, onIndietro,
 
   return (
     <div className="pg-modale" role="dialog" aria-modal="true" onClick={onChiudi}>
-      <div className="pg-modale-box" onClick={(e) => e.stopPropagation()}>
+      <div className="pg-modale-box bg-frame" onClick={(e) => e.stopPropagation()}>
         <button className="pg-chiudi" onClick={onChiudi} aria-label="Chiudi">×</button>
 
         {!esito ? (
@@ -290,7 +290,7 @@ function Questionario({ passo, esito, risposte, onRispondi, onIndietro,
                 const c = CLASSI[classe];
                 const n = quantiPer(classe, esito.stile);
                 return (
-                  <li key={classe} className={i === 0 ? 'primo' : ''}>
+                  <li key={classe} className={`bg-parchment ${i === 0 ? 'primo' : ''}`}>
                     <div className="pg-ris-testa">
                       <span className="pg-ris-emoji">{c.emoji}</span>
                       <div>

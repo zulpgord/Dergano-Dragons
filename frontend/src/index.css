@@ -19,6 +19,8 @@
   --gold:       #b0801a;   /* token: gold — azione primaria, una per schermata */
   --gold-light: #c99a35;
   --gold-dim:   #ddc38f;
+  --gold-deep:  #8a6a14;
+  --on-gold:    #fffbf2;   /* testo sopra i bottoni d'oro */
   --red:        #a23b22;   /* token: wax — avvisi, annullamenti, lista d'attesa */
   --red-light:  #c14f36;
   --green:      #2b6663;   /* token: teal — azione secondaria, stato attivo */
@@ -88,8 +90,8 @@ h1, h2, h3 {
 .bg-gray-200            { background-color: var(--bg-hover) !important; }
 .bg-indigo-50           { background-color: rgba(36,85,164,0.08) !important; }
 .bg-indigo-100          { background-color: rgba(36,85,164,0.14) !important; }
-.bg-indigo-600          { background-color: var(--gold) !important; color: #fffbf2 !important; }
-.bg-indigo-700          { background-color: var(--gold-light) !important; color: #fffbf2 !important; }
+.bg-indigo-600          { background-color: var(--gold) !important; color: var(--on-gold) !important; }
+.bg-indigo-700          { background-color: var(--gold-light) !important; color: var(--on-gold) !important; }
 .bg-indigo-400          { background-color: var(--gold-dim) !important; }
 .bg-red-50              { background-color: rgba(179,38,30,0.08) !important; }
 .bg-red-100             { background-color: rgba(179,38,30,0.14) !important; }
@@ -112,15 +114,15 @@ h1, h2, h3 {
 .text-gray-400          { color: var(--text-dim) !important; }
 .text-indigo-600        { color: var(--gold) !important; }
 .text-indigo-700        { color: var(--gold) !important; }
-.text-green-700         { color: #2b6663 !important; }
-.text-green-900         { color: #1a4d21 !important; }
-.text-red-700           { color: #a23b22 !important; }
-.text-red-600           { color: #b3261e !important; }
-.text-yellow-700        { color: #a23b22 !important; }
-.text-yellow-600        { color: #b0801a !important; }
-.text-blue-700          { color: #2b6663 !important; }
-.text-blue-600          { color: #2b6663 !important; }
-.text-white             { color: #fffbf2 !important; }
+.text-green-700         { color: var(--green) !important; }
+.text-green-900         { color: var(--green) !important; }
+.text-red-700           { color: var(--red) !important; }
+.text-red-600           { color: var(--red) !important; }
+.text-yellow-700        { color: var(--red) !important; }
+.text-yellow-600        { color: var(--gold) !important; }
+.text-blue-700          { color: var(--green) !important; }
+.text-blue-600          { color: var(--green) !important; }
+.text-white             { color: var(--on-gold) !important; }
 
 /* Borders */
 .border                 { border-color: var(--border) !important; }
@@ -148,7 +150,7 @@ h1, h2, h3 {
 button.bg-indigo-600,
 button.bg-indigo-600:hover {
   background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%) !important;
-  color: #fffbf2 !important;
+  color: var(--on-gold) !important;
   font-family: var(--font-title) !important;
   font-weight: 700 !important;
   letter-spacing: 0.5px !important;
@@ -162,7 +164,7 @@ button.bg-indigo-600:hover {
 }
 button.bg-red-50 {
   background-color: rgba(179,38,30,0.10) !important;
-  color: #a23b22 !important;
+  color: var(--red) !important;
   border-color: rgba(179,38,30,0.3) !important;
 }
 button.text-indigo-600:hover { color: var(--gold-light) !important; }
@@ -189,7 +191,7 @@ input:focus, select:focus, textarea:focus {
 
 /* Header fantasy */
 header.bg-white {
-  background: linear-gradient(180deg, #fffbf2 0%, #f4ead4 100%) !important;
+  background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-page) 100%) !important;
   border-bottom: 2px solid var(--border-gold) !important;
   box-shadow: 0 2px 10px rgba(80,60,20,0.08) !important;
 }
@@ -209,8 +211,8 @@ button.border-indigo-600 { color: var(--gold) !important; }
 
 .border-t.border-gray-100 { border-top-color: var(--border) !important; }
 
-.bg-green-600  { background-color: var(--green-light) !important; color: #fffbf2 !important; }
-.bg-red-600 { background-color: var(--red) !important; color: #fffbf2 !important; }
+.bg-green-600  { background-color: var(--green-light) !important; color: var(--on-gold) !important; }
+.bg-red-600 { background-color: var(--red) !important; color: var(--on-gold) !important; }
 
 /* Decorazione angolare sulle card principali */
 .rounded-xl.shadow-sm::before {
@@ -333,8 +335,8 @@ button.border-indigo-600 { color: var(--gold) !important; }
   transform: translateX(-50%);
   white-space: nowrap;
   background: var(--bg-card, #fffbf2);
-  color: var(--gold, #b0801a);
-  border: 2px solid var(--gold, #b0801a);
+  color: var(--gold, var(--gold));
+  border: 2px solid var(--gold, var(--gold));
   border-radius: 14px;
   padding: 8px 16px;
   font-family: 'Titan One', 'Luckiest Guy', fantasy;
@@ -352,7 +354,7 @@ button.border-indigo-600 { color: var(--gold) !important; }
   transform: translateX(-50%);
   border-width: 9px 8px 0 8px;
   border-style: solid;
-  border-color: var(--gold, #b0801a) transparent transparent transparent;
+  border-color: var(--gold, var(--gold)) transparent transparent transparent;
 }
 @keyframes waitingBubblePop {
   0%   { transform: translateX(-50%) scale(0.5); opacity: 0; }
@@ -451,4 +453,175 @@ button.border-indigo-600 { color: var(--gold) !important; }
 }
 .fill-bar.empty-track {
   background: transparent;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   STILE "BALDUR'S GATE" — cornici incise, cartigli, pergamena, gemme
+   Tutto in CSS (nessuna immagine): ispirato, non copiato.
+   ══════════════════════════════════════════════════════════ */
+:root {
+  --frame-1: #7a5a2a;   /* bronzo scuro */
+  --frame-2: #c9a25a;   /* bronzo chiaro */
+  --frame-3: #4a3518;   /* incisione */
+  --parchment: #f3e2bd;
+  --parchment-edge: #c9a76a;
+  --gem: #b3261e;
+  --gem-light: #ff7a66;
+}
+
+/* Tema scuro "dungeon": pietra e oro, come le schermate di BG2 */
+:root[data-theme="dungeon"] {
+  --bg-page:    #17130e;
+  --bg-dark:    #17130e;
+  --bg-card:    #231c14;
+  --bg-surface: #30271b;
+  --bg-hover:   #3b3021;
+  --gold:       #d9ad52;
+  --gold-light: #ecc56f;
+  --gold-dim:   #6d5527;
+  --gold-deep:  #ecc56f;
+  --on-gold:    #1c160e;
+  --red:        #e0705a;
+  --red-light:  #f08c76;
+  --green:      #79c2bc;
+  --green-light:#93d4ce;
+  --blue:       #79c2bc;
+  --blue-light: #93d4ce;
+  --text:       #efe3c8;
+  --text-muted: #c9b48c;
+  --text-dim:   #9a8a6c;
+  --border:     #4a3c28;
+  --border-gold:#d9ad52;
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.5);
+  --frame-1: #3b2c16;
+  --frame-2: #8c6c34;
+  --frame-3: #0d0a06;
+  --parchment: #e8d3a6;
+  --parchment-edge: #a9874a;
+  color-scheme: dark;
+}
+:root[data-theme="dungeon"] body {
+  background-color: var(--bg-page);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(217,173,82,0.08) 0%, transparent 55%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0 2px, transparent 2px 6px);
+}
+
+/* Pannello con cornice di bronzo inciso e angoli rinforzati */
+.bg-frame {
+  position: relative;
+  background: var(--bg-card) !important;
+  border: 3px solid var(--frame-1) !important;
+  border-radius: 6px !important;
+  box-shadow:
+    inset 0 0 0 1px var(--frame-2),
+    inset 0 0 0 4px var(--frame-3),
+    inset 0 0 24px rgba(0,0,0,0.18),
+    0 0 0 1px var(--frame-3),
+    0 10px 30px rgba(20,12,4,0.35) !important;
+}
+.bg-frame::before, .bg-frame::after {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  border: 2px solid var(--frame-2);
+  background: radial-gradient(circle, var(--frame-2) 0 2px, var(--frame-1) 3px);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+.bg-frame::before { top: -11px; left: -11px; }
+.bg-frame::after  { top: -11px; right: -11px; }
+
+/* Cartiglio: titolo inciso su una targa al centro del bordo superiore */
+.bg-cartouche {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: -6px auto 14px !important;
+  padding: 6px 26px !important;
+  font-family: var(--font-title);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 3px !important;
+  font-size: 0.95rem !important;
+  color: var(--on-gold) !important;
+  background: linear-gradient(180deg, var(--frame-2), var(--frame-1)) !important;
+  border: 1px solid var(--frame-3);
+  border-radius: 3px;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+}
+:root[data-theme="dungeon"] .bg-cartouche { color: #f7e7c2 !important; }
+
+/* Pergamena per i testi lunghi, con capolettera miniato */
+.bg-parchment {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.35), transparent 60%),
+    radial-gradient(ellipse at 80% 90%, rgba(120,80,20,0.12), transparent 55%),
+    var(--parchment) !important;
+  color: #2a2118 !important;
+  border: 1px solid var(--parchment-edge) !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 0 30px rgba(120,80,20,0.25), 0 2px 8px rgba(0,0,0,0.15) !important;
+  /* Sulla pergamena l'inchiostro resta scuro anche col tema dungeon */
+  --text: #2a2118; --text-muted: #5a4a30; --text-dim: #7a6a4c; --ink: #2a2118; --stone: #7a6a4c;
+  --gold: #8a5a10; --border: #c9a76a; --bg-surface: rgba(255,255,255,0.35);
+}
+.bg-parchment p:first-of-type::first-letter, .bg-dropcap::first-letter {
+  float: left;
+  font-family: var(--font-title);
+  font-size: 2.6em;
+  line-height: 0.9;
+  padding: 4px 6px 0 0;
+  color: #8e2a1c;
+}
+
+/* Gemme al posto delle caselle di spunta */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px !important; height: 18px !important;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--frame-1);
+  background: radial-gradient(circle at 35% 30%, #6b5a46, #241a10 70%);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.6), 0 0 0 1px var(--frame-2);
+  cursor: pointer;
+  transition: background .15s, box-shadow .15s;
+  vertical-align: middle;
+}
+input[type="checkbox"]:checked {
+  background: radial-gradient(circle at 35% 30%, var(--gem-light), var(--gem) 55%, #5a0f0a 100%);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.4), 0 0 0 1px var(--frame-2), 0 0 8px rgba(255,90,70,0.55);
+}
+input[type="checkbox"]:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+input[type="checkbox"]:disabled { opacity: 0.5; cursor: default; }
+
+/* Placche incise: i bottoni d'oro principali diventano targhe di bronzo */
+button[style*="linear-gradient(135deg, var(--gold), var(--gold-light))"] {
+  background: linear-gradient(180deg, var(--frame-2) 0%, var(--gold) 45%, var(--frame-1) 100%) !important;
+  border: 1px solid var(--frame-3) !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -2px 0 rgba(0,0,0,0.25), 0 2px 6px rgba(0,0,0,0.25) !important;
+  text-transform: uppercase;
+  letter-spacing: 1.5px !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+button[style*="linear-gradient(135deg, var(--gold), var(--gold-light))"]:active { transform: translateY(1px); }
+
+/* Pulsante tema */
+.theme-toggle {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  input[type="checkbox"], button { transition: none !important; }
 }

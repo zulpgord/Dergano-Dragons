@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { shiftsAPI, locationsAPI, adminAPI, authAPI, groupsAPI, assignmentsAPI, contentAPI } from '../services/api';
 import SchedeAdminTab from './SchedeAdminTab';
+import ThemeToggle from '../components/ThemeToggle';
 
 function getWeekStart(date) {
   const d = new Date(date);
@@ -17,9 +18,9 @@ function fmtShortDate(date) { return date.toLocaleDateString('it-IT', { day: 'nu
 // ── Stile comune per input admin (tema chiaro) ──────────────────────────────
 const IS = {
   width: '100%', padding: '9px 12px',
-  backgroundColor: 'var(--bg-card, #fffbf2)',
-  border: '1px solid var(--border, #ddd0b3)',
-  borderRadius: '7px', color: 'var(--text, #262019)',
+  backgroundColor: 'var(--bg-card)',
+  border: '1px solid var(--border)',
+  borderRadius: '7px', color: 'var(--text)',
   fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box',
 };
 
@@ -94,52 +95,53 @@ function SessionDetailModal({ session, onClose, heroes, heroesFailed, onReloadHe
     >
       <div
         onClick={e => e.stopPropagation()}
+        className="bg-frame"
         style={{
-          background: 'var(--bg-card, #fffbf2)', border: '1px solid var(--border-gold, #b0801a)',
+          background: 'var(--bg-card)', border: '1px solid var(--border-gold, var(--gold))',
           borderRadius: '12px', boxShadow: '0 8px 32px rgba(80,60,20,0.25)',
           width: '100%', maxWidth: '400px', padding: '1.5rem', maxHeight: '85vh', overflowY: 'auto',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
           <div>
-            <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: 0, fontSize: '1.1rem' }}>
+            <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: 0, fontSize: '1.1rem' }}>
               {session.location_name}
             </h2>
             {session.has_pizza && (
               <span className="pizza-badge" style={{ marginTop: '4px', display: 'inline-flex' }}>🍕 Pizza inclusa</span>
             )}
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#8a7f6c', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1 }}>×</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1 }}>×</button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px', color: 'var(--text-muted, #6b5a3c)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: '0.9rem', textTransform: 'capitalize' }}>📅 {fmtDate(session.start_time)}</div>
           <div style={{ fontSize: '0.9rem' }}>🕐 {fmt(session.start_time)} — {fmt(session.end_time)}</div>
           <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)' }}>
             ⚔️ {session.assigned_count} / {session.required_count} avventurieri
-            {session.cancelled && <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: '#a23b22', fontWeight: 700 }}>⚠ Annullata</span>}
+            {session.cancelled && <span style={{ marginLeft: '8px', fontSize: '0.75rem', color: 'var(--red)', fontWeight: 700 }}>⚠ Annullata</span>}
           </div>
           <FillBar current={session.assigned_count} total={session.required_count} height={8} />
         </div>
 
-        <p style={{ fontSize: '0.72rem', color: '#8a7f6c', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+        <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
           Avventurieri iscritti ({assignedUsers.length})
         </p>
         {assignedUsers.length === 0 ? (
-          <p style={{ fontSize: '0.85rem', color: '#8a7f6c', marginBottom: '18px' }}>Nessuno iscritto ancora.</p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '18px' }}>Nessuno iscritto ancora.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '18px' }}>
             {assignedUsers.map(u => (
-              <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text, #262019)' }}>
+              <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text)' }}>
                 <span style={{
                   width: '22px', height: '22px', borderRadius: '50%',
                   background: 'rgba(169,121,26,0.14)', border: '1px solid rgba(169,121,26,0.3)',
-                  color: '#b0801a', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '0.75rem', fontWeight: 700, flexShrink: 0,
                 }}>{u.name.charAt(0).toUpperCase()}</span>
-                <span style={{ flex: 1 }}>{u.name}{u.seats > 1 && <span style={{ color: '#8a7f6c', fontSize: '0.78rem' }}> — {u.seats} posti</span>}</span>
+                <span style={{ flex: 1 }}>{u.name}{u.seats > 1 && <span style={{ color: 'var(--text-dim)', fontSize: '0.78rem' }}> — {u.seats} posti</span>}</span>
                 <button onClick={() => handleRemove(u.id)} disabled={removingId === u.id} title="Rimuovi dalla sessione"
-                  style={{ background: 'none', border: 'none', color: '#a23b22', cursor: 'pointer', fontSize: '0.85rem', opacity: removingId === u.id ? 0.5 : 1 }}>
+                  style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.85rem', opacity: removingId === u.id ? 0.5 : 1 }}>
                   🗑️
                 </button>
               </div>
@@ -147,24 +149,24 @@ function SessionDetailModal({ session, onClose, heroes, heroesFailed, onReloadHe
           </div>
         )}
 
-        <p style={{ fontSize: '0.72rem', color: '#a23b22', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+        <p style={{ fontSize: '0.72rem', color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
           ⏳ Lista d'attesa ({waitingUsers.length})
         </p>
         {waitingUsers.length === 0 ? (
-          <p style={{ fontSize: '0.85rem', color: '#8a7f6c' }}>Nessuno in lista d'attesa.</p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>Nessuno in lista d'attesa.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {waitingUsers.map((u, i) => (
-              <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-muted, #6b5a3c)' }}>
+              <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                 <span style={{
                   width: '22px', height: '22px', borderRadius: '50%',
                   background: 'rgba(169,121,26,0.10)', border: '1px dashed rgba(169,121,26,0.4)',
-                  color: '#a23b22', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '0.72rem', fontWeight: 700, flexShrink: 0,
                 }}>{i + 1}</span>
                 <span style={{ flex: 1 }}>{u.name}{u.seats > 1 && <span style={{ fontSize: '0.78rem' }}> — {u.seats} posti</span>}</span>
                 <button onClick={() => handleRemove(u.id)} disabled={removingId === u.id} title="Rimuovi dalla sessione"
-                  style={{ background: 'none', border: 'none', color: '#a23b22', cursor: 'pointer', fontSize: '0.85rem', opacity: removingId === u.id ? 0.5 : 1 }}>
+                  style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: '0.85rem', opacity: removingId === u.id ? 0.5 : 1 }}>
                   🗑️
                 </button>
               </div>
@@ -174,19 +176,19 @@ function SessionDetailModal({ session, onClose, heroes, heroesFailed, onReloadHe
 
         {!session.cancelled && (
           <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
-            <p style={{ fontSize: '0.72rem', color: '#6b5a3c', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
               ➕ Iscrivi un eroe manualmente
             </p>
             {heroesFailed ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.82rem', color: '#a23b22' }}>Non sono riuscito a caricare l'elenco degli eroi.</span>
+                <span style={{ fontSize: '0.82rem', color: 'var(--red)' }}>Non sono riuscito a caricare l'elenco degli eroi.</span>
                 <button type="button" onClick={onReloadHeroes}
-                  style={{ padding: '5px 12px', borderRadius: '6px', background: 'rgba(179,38,30,0.12)', color: '#a23b22', border: '1px solid rgba(179,38,30,0.35)', cursor: 'pointer', fontWeight: 700, fontSize: '0.78rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+                  style={{ padding: '5px 12px', borderRadius: '6px', background: 'rgba(179,38,30,0.12)', color: 'var(--red)', border: '1px solid rgba(179,38,30,0.35)', cursor: 'pointer', fontWeight: 700, fontSize: '0.78rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
                   🔄 Riprova
                 </button>
               </div>
             ) : availableHeroes.length === 0 ? (
-              <p style={{ fontSize: '0.82rem', color: '#8a7f6c' }}>Tutti gli eroi sono già iscritti o in attesa per questa sessione.</p>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Tutti gli eroi sono già iscritti o in attesa per questa sessione.</p>
             ) : (
               <form onSubmit={handleAdd} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <select value={addUserId} onChange={e => setAddUserId(e.target.value)} required
@@ -196,13 +198,13 @@ function SessionDetailModal({ session, onClose, heroes, heroesFailed, onReloadHe
                 </select>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <button type="button" onClick={() => setAddSeats(s => Math.max(1, s - 1))}
-                    style={{ width: '24px', height: '24px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: '#b0801a', cursor: 'pointer' }}>−</button>
+                    style={{ width: '24px', height: '24px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--gold)', cursor: 'pointer' }}>−</button>
                   <span style={{ minWidth: '16px', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text)' }}>{addSeats}</span>
                   <button type="button" onClick={() => setAddSeats(s => Math.min(6, s + 1))}
-                    style={{ width: '24px', height: '24px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: '#b0801a', cursor: 'pointer' }}>+</button>
+                    style={{ width: '24px', height: '24px', borderRadius: '5px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--gold)', cursor: 'pointer' }}>+</button>
                 </div>
                 <button type="submit" disabled={adding || !addUserId}
-                  style={{ padding: '8px 14px', background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', opacity: (adding || !addUserId) ? 0.6 : 1 }}>
+                  style={{ padding: '8px 14px', background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', opacity: (adding || !addUserId) ? 0.6 : 1 }}>
                   {adding ? '...' : 'Iscrivi'}
                 </button>
               </form>
@@ -246,28 +248,28 @@ function ShiftEmailBox({ sessionId, assigned, waiting }) {
     <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
       {!open ? (
         <button type="button" onClick={() => setOpen(true)}
-          style={{ padding: '8px 14px', background: 'rgba(169,121,26,0.12)', color: '#b0801a', border: '1px solid rgba(169,121,26,0.35)', borderRadius: '7px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+          style={{ padding: '8px 14px', background: 'rgba(169,121,26,0.12)', color: 'var(--gold)', border: '1px solid rgba(169,121,26,0.35)', borderRadius: '7px', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
           📧 Scrivi agli iscritti
         </button>
       ) : (
         <form onSubmit={send} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <p style={{ fontSize: '0.75rem', color: '#6b5a3c', letterSpacing: '1px', textTransform: 'uppercase', margin: 0, fontWeight: 700 }}>📧 Scrivi agli iscritti</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '1px', textTransform: 'uppercase', margin: 0, fontWeight: 700 }}>📧 Scrivi agli iscritti</p>
           <input placeholder="Oggetto (es. Cambio orario)" value={subject} onChange={e => setSubject(e.target.value)} required style={field} />
           <textarea placeholder="Messaggio" rows={4} value={message} onChange={e => setMessage(e.target.value)} required style={field} />
           {waiting > 0 && (
-            <label style={{ fontSize: '0.82rem', color: '#6b5a3c', display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <input type="checkbox" checked={includeWaiting} onChange={e => setIncludeWaiting(e.target.checked)} style={{ accentColor: '#b0801a' }} />
+            <label style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <input type="checkbox" checked={includeWaiting} onChange={e => setIncludeWaiting(e.target.checked)} style={{ accentColor: 'var(--gold)' }} />
               Anche alla lista d’attesa ({waiting})
             </label>
           )}
-          {result && <p style={{ fontSize: '0.82rem', margin: 0, color: result.ok ? '#2b6663' : '#a23b22' }}>{result.text}</p>}
+          {result && <p style={{ fontSize: '0.82rem', margin: 0, color: result.ok ? 'var(--green)' : 'var(--red)' }}>{result.text}</p>}
           <div style={{ display: 'flex', gap: '8px' }}>
             <button type="submit" disabled={sending}
-              style={{ flex: 1, padding: '9px', background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', opacity: sending ? 0.6 : 1, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+              style={{ flex: 1, padding: '9px', background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '7px', fontWeight: 700, cursor: 'pointer', opacity: sending ? 0.6 : 1, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
               {sending ? 'Invio...' : `Invia a ${count}`}
             </button>
             <button type="button" onClick={() => { setOpen(false); setResult(null); }}
-              style={{ padding: '9px 14px', background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #ddd0b3', borderRadius: '7px', cursor: 'pointer' }}>Chiudi</button>
+              style={{ padding: '9px 14px', background: 'rgba(217,201,158,0.35)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: '7px', cursor: 'pointer' }}>Chiudi</button>
           </div>
         </form>
       )}
@@ -325,27 +327,27 @@ function NewsletterSection() {
     } finally { setSending(false); }
   };
 
-  const card = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', maxWidth: '640px', marginBottom: '16px' };
-  const h2 = { fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 6px', fontSize: '1.05rem' };
-  const p = { fontSize: '0.82rem', color: '#6b5a3c', margin: '0 0 14px', lineHeight: 1.5 };
+  const card = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', maxWidth: '640px', marginBottom: '22px' };
+  const h2 = { fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 6px', fontSize: '1.05rem' };
+  const p = { fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 14px', lineHeight: 1.5 };
   const field = { width: '100%', padding: '9px 12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '16px', boxSizing: 'border-box', fontFamily: 'inherit' };
   const btn = { padding: '10px 16px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', opacity: sending ? 0.6 : 1 };
-  const ghost = { ...btn, background: 'rgba(169,121,26,0.12)', color: '#b0801a', border: '1px solid rgba(169,121,26,0.35)' };
-  const gold = { ...btn, flex: 1, background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a' };
-  const chip = (on) => ({ padding: '7px 14px', borderRadius: '20px', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', border: `1px solid ${on ? '#b0801a' : 'var(--border)'}`, background: on ? 'rgba(169,121,26,0.14)' : 'var(--bg-surface)', color: on ? '#8a6a14' : '#6b5a3c', fontWeight: on ? 700 : 400 });
+  const ghost = { ...btn, background: 'rgba(169,121,26,0.12)', color: 'var(--gold)', border: '1px solid rgba(169,121,26,0.35)' };
+  const gold = { ...btn, flex: 1, background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)' };
+  const chip = (on) => ({ padding: '7px 14px', borderRadius: '20px', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', border: `1px solid ${on ? 'var(--gold)' : 'var(--border)'}`, background: on ? 'rgba(169,121,26,0.14)' : 'var(--bg-surface)', color: on ? 'var(--gold-deep)' : 'var(--text-muted)', fontWeight: on ? 700 : 400 });
 
   return (
     <div>
       {/* Invito al consenso, per chi era gia' iscritto prima della newsletter */}
       {notSubscribed > 0 && (
-        <div style={{ ...card, borderColor: 'rgba(169,121,26,0.45)' }}>
-          <h2 style={h2}>✉️ Invita a iscriversi</h2>
+        <div className="bg-frame" style={{ ...card, borderColor: 'rgba(169,121,26,0.45)' }}>
+          <h2 className="bg-cartouche" style={h2}>✉️ Invita a iscriversi</h2>
           <p style={p}>
             <strong>{notSubscribed}</strong> {notSubscribed === 1 ? 'iscritto non ha' : 'iscritti non hanno'} ancora accettato la newsletter.
             Ricevono un’email con il pulsante «Sì, voglio ricevere la newsletter»: un tocco e il consenso è registrato, senza entrare nel sito.
             Chi non risponde non riceverà nulla.
           </p>
-          {inviteResult && <p style={{ fontSize: '0.85rem', margin: '0 0 10px', color: inviteResult.ok ? '#2b6663' : '#a23b22' }}>{inviteResult.text}</p>}
+          {inviteResult && <p style={{ fontSize: '0.85rem', margin: '0 0 10px', color: inviteResult.ok ? 'var(--green)' : 'var(--red)' }}>{inviteResult.text}</p>}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button type="button" disabled={sending} onClick={() => sendInvite(true)} style={ghost}>Mandami una prova</button>
             <button type="button" disabled={sending} onClick={() => sendInvite(false)} style={gold}>Invia l’invito a {notSubscribed}</button>
@@ -353,8 +355,8 @@ function NewsletterSection() {
         </div>
       )}
 
-      <div style={card}>
-        <h2 style={h2}>📜 Newsletter</h2>
+      <div className="bg-frame" style={card}>
+        <h2 className="bg-cartouche" style={h2}>📜 Newsletter</h2>
         <p style={p}>
           {stats ? <><strong>{stats.subscribed}</strong> iscritti su {stats.total} hanno scelto di riceverla. </> : null}
           Parte solo a chi ha dato il consenso; ogni email ha il link per disiscriversi.
@@ -384,14 +386,14 @@ function NewsletterSection() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <input placeholder="Oggetto" value={subject} onChange={e => setSubject(e.target.value)} style={field} />
           <textarea placeholder="Messaggio (es. le sessioni del prossimo mese)" rows={8} value={message} onChange={e => setMessage(e.target.value)} style={field} />
-          {result && <p style={{ fontSize: '0.85rem', margin: 0, color: result.ok ? '#2b6663' : '#a23b22' }}>{result.text}</p>}
+          {result && <p style={{ fontSize: '0.85rem', margin: 0, color: result.ok ? 'var(--green)' : 'var(--red)' }}>{result.text}</p>}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button type="button" disabled={sending} onClick={() => send(true)} style={ghost}>Mandami una prova</button>
             <button type="button" disabled={sending || !recipients} onClick={() => send(false)} style={gold}>
               {sending ? 'Invio...' : target === 'all' ? `Invia a ${recipients} iscritti` : `Invia ai tavoli scelti (fino a ${recipients})`}
             </button>
           </div>
-          {target === 'groups' && <p style={{ fontSize: '0.75rem', color: '#8a7f6c', margin: 0 }}>Il numero accanto a ogni tavolo indica quanti hanno accettato la newsletter su quanti membri. Chi è in più tavoli riceve una sola email.</p>}
+          {target === 'groups' && <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', margin: 0 }}>Il numero accanto a ogni tavolo indica quanti hanno accettato la newsletter su quanti membri. Chi è in più tavoli riceve una sola email.</p>}
         </div>
       </div>
     </div>
@@ -627,10 +629,10 @@ function SessionsSection({ locations }) {
   const fmt = dt => new Date(dt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
   const fmtDay = dt => new Date(dt).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
 
-  const cardSty = { background: 'var(--bg-card, #fffbf2)', border: '1px solid var(--border, #ddd0b3)', borderRadius: '10px', padding: '20px', marginBottom: '20px' };
-  const btnGold = { background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.82rem', padding: '8px 16px', cursor: 'pointer' };
-  const btnGreen = { ...btnGold, background: 'linear-gradient(135deg, #2b6663, #3a8480)', color: '#fffbf2', border: '1px solid rgba(47,125,58,0.6)' };
-  const btnGray = { background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #ddd0b3', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem' };
+  const cardSty = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', marginBottom: '20px' };
+  const btnGold = { background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.82rem', padding: '8px 16px', cursor: 'pointer' };
+  const btnGreen = { ...btnGold, background: 'linear-gradient(135deg, var(--green), var(--green-light))', color: 'var(--on-gold)', border: '1px solid rgba(47,125,58,0.6)' };
+  const btnGray = { background: 'rgba(217,201,158,0.35)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem' };
 
   // ── Rendering condiviso di una riga sessione ────────────────────────────
   const renderSessionRow = (s) => {
@@ -639,17 +641,17 @@ function SessionsSection({ locations }) {
     if (editingSession === s.id) {
       return (
         <div key={s.id} style={{ border: '1px solid rgba(169,121,26,0.4)', background: 'rgba(169,121,26,0.05)', borderRadius: '8px', padding: '12px' }}>
-          <p style={{ fontSize: '0.75rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#b0801a', marginBottom: '10px' }}>✏️ Modifica sessione</p>
+          <p style={{ fontSize: '0.75rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--gold)', marginBottom: '10px' }}>✏️ Modifica sessione</p>
           <div className="form-grid-2" style={{ marginBottom: '8px' }}>
             <div style={{ gridColumn: '1/-1' }}>
-              <label style={{ fontSize: '0.72rem', color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Location</label>
+              <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Location</label>
               <select name="location_id" value={editData.location_id} onChange={handleEditChange} style={{ ...IS, padding: '6px 10px', fontSize: '0.85rem', marginTop: '3px' }}>
                 {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
               </select>
             </div>
             {[['date','Data','date'],['start_hour','Ora inizio','time'],['duration','Durata (ore)','number'],['required_count','Avv. massimi','number']].map(([name,label,type]) => (
               <div key={name}>
-                <label style={{ fontSize: '0.72rem', color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{label}</label>
+                <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{label}</label>
                 <input type={type} name={name} value={editData[name]} onChange={handleEditChange}
                   min={type==='number'?'0.5':undefined} step={name==='duration'?'0.5':undefined}
                   style={{ ...IS, padding: '6px 10px', fontSize: '0.85rem', marginTop: '3px' }} />
@@ -657,18 +659,18 @@ function SessionsSection({ locations }) {
             ))}
             <div style={{ gridColumn: '1/-1', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
               <input type="checkbox" name="has_pizza" checked={!!editData.has_pizza} onChange={handleEditChange}
-                style={{ width: '16px', height: '16px', accentColor: '#b0801a' }} />
-              <label style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#b0801a', fontSize: '0.82rem' }}>🍕 Pizza inclusa</label>
+                style={{ width: '16px', height: '16px', accentColor: 'var(--gold)' }} />
+              <label style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--gold)', fontSize: '0.82rem' }}>🍕 Pizza inclusa</label>
             </div>
             <div style={{ gridColumn: '1/-1', marginTop: '6px', padding: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '7px' }}>
-              <label style={{ fontSize: '0.72rem', color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', display: 'block', marginBottom: '6px' }}>👁 Visibilità</label>
+              <label style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', display: 'block', marginBottom: '6px' }}>👁 Visibilità</label>
               <div style={{ display: 'flex', gap: '14px', marginBottom: editData.visible_to_all ? 0 : '8px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text)' }}>
-                  <input type="radio" checked={!!editData.visible_to_all} onChange={() => setEditData(p => ({ ...p, visible_to_all: true }))} style={{ accentColor: '#b0801a' }} />
+                  <input type="radio" checked={!!editData.visible_to_all} onChange={() => setEditData(p => ({ ...p, visible_to_all: true }))} style={{ accentColor: 'var(--gold)' }} />
                   Tutti
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text)' }}>
-                  <input type="radio" checked={!editData.visible_to_all} onChange={() => setEditData(p => ({ ...p, visible_to_all: false }))} style={{ accentColor: '#b0801a' }} />
+                  <input type="radio" checked={!editData.visible_to_all} onChange={() => setEditData(p => ({ ...p, visible_to_all: false }))} style={{ accentColor: 'var(--gold)' }} />
                   Solo gruppi
                 </label>
               </div>
@@ -679,10 +681,10 @@ function SessionsSection({ locations }) {
                       display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer',
                       fontSize: '0.75rem', padding: '3px 8px', borderRadius: '10px',
                       background: (editData.group_ids || []).includes(g.id) ? 'rgba(169,121,26,0.16)' : 'var(--bg-surface)',
-                      border: `1px solid ${(editData.group_ids || []).includes(g.id) ? '#b0801a' : 'var(--border)'}`,
-                      color: (editData.group_ids || []).includes(g.id) ? '#b0801a' : 'var(--text-muted)',
+                      border: `1px solid ${(editData.group_ids || []).includes(g.id) ? 'var(--gold)' : 'var(--border)'}`,
+                      color: (editData.group_ids || []).includes(g.id) ? 'var(--gold)' : 'var(--text-muted)',
                     }}>
-                      <input type="checkbox" checked={(editData.group_ids || []).includes(g.id)} onChange={() => toggleEditGroup(g.id)} style={{ accentColor: '#b0801a' }} />
+                      <input type="checkbox" checked={(editData.group_ids || []).includes(g.id)} onChange={() => toggleEditGroup(g.id)} style={{ accentColor: 'var(--gold)' }} />
                       {g.name}
                     </label>
                   ))}
@@ -718,25 +720,25 @@ function SessionsSection({ locations }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px', flexWrap: 'wrap' }}>
-              <span style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', fontWeight: 700, fontSize: '0.88rem', color: isCancelled ? '#8a7f6c' : '#b0801a', textDecoration: isCancelled ? 'line-through' : 'none' }}>
+              <span style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', fontWeight: 700, fontSize: '0.88rem', color: isCancelled ? 'var(--text-dim)' : 'var(--gold)', textDecoration: isCancelled ? 'line-through' : 'none' }}>
                 {s.location_name}
               </span>
-              <span style={{ fontSize: '0.7rem', padding: '1px 7px', borderRadius: '10px', background: 'rgba(169,121,26,0.10)', color: '#6b5a3c' }}>
+              <span style={{ fontSize: '0.7rem', padding: '1px 7px', borderRadius: '10px', background: 'rgba(169,121,26,0.10)', color: 'var(--text-muted)' }}>
                 {isCancelled ? 'Annullata' : s.assigned_count === 0 ? 'Nessun avventuriero' : `${s.assigned_count}/${s.required_count} ✓`}
               </span>
               {waitingCount > 0 && !isCancelled && (
-                <span style={{ fontSize: '0.7rem', padding: '1px 7px', borderRadius: '10px', background: 'rgba(169,121,26,0.14)', color: '#a23b22' }}>
+                <span style={{ fontSize: '0.7rem', padding: '1px 7px', borderRadius: '10px', background: 'rgba(169,121,26,0.14)', color: 'var(--red)' }}>
                   ⏳ {waitingCount} in attesa
                 </span>
               )}
               {s.has_pizza && <span className="pizza-badge">🍕</span>}
               {s.visible_to_all === false && (
-                <span style={{ fontSize: '0.7rem', padding: '1px 7px', borderRadius: '10px', background: 'rgba(36,85,164,0.12)', color: '#2b6663' }} title={(s.groups || []).map(g => g.name).join(', ')}>
+                <span style={{ fontSize: '0.7rem', padding: '1px 7px', borderRadius: '10px', background: 'rgba(36,85,164,0.12)', color: 'var(--green)' }} title={(s.groups || []).map(g => g.name).join(', ')}>
                   🔒 {(s.groups || []).map(g => g.name).join(', ') || 'gruppo'}
                 </span>
               )}
             </div>
-            <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b5a3c' }}>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
               {fmtDay(s.start_time)} · {fmt(s.start_time)}–{fmt(s.end_time)}
             </p>
             {!isCancelled && (
@@ -745,10 +747,10 @@ function SessionsSection({ locations }) {
               </div>
             )}
             {(s.assigned_users || []).length > 0 && (
-              <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: '#8a7f6c' }}>⚔️ {s.assigned_users.map(u => u.seats > 1 ? `${u.name} (${u.seats})` : u.name).join(', ')}</p>
+              <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: 'var(--text-dim)' }}>⚔️ {s.assigned_users.map(u => u.seats > 1 ? `${u.name} (${u.seats})` : u.name).join(', ')}</p>
             )}
           </div>
-          <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: '4px', marginLeft: '8px', flexShrink: 0 }}>
+          <div onClick={e => e.stopPropagation()} className="bg-frame" style={{ display: 'flex', gap: '4px', marginLeft: '8px', flexShrink: 0 }}>
             {!isCancelled && (
               <button onClick={() => startEditSession(s)} title="Modifica"
                 style={{ width: '30px', height: '30px', borderRadius: '6px', background: 'var(--bg-card)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: '0.85rem' }}>✏️</button>
@@ -775,10 +777,10 @@ function SessionsSection({ locations }) {
       )
     : 0;
   const kpiColor = kpiFillPercent >= 80
-    ? { bg: 'rgba(47,125,58,0.12)', text: '#2b6663', border: 'rgba(47,125,58,0.3)' }
+    ? { bg: 'rgba(47,125,58,0.12)', text: 'var(--green)', border: 'rgba(47,125,58,0.3)' }
     : kpiFillPercent >= 50
-    ? { bg: 'rgba(169,121,26,0.12)', text: '#a23b22', border: 'rgba(169,121,26,0.3)' }
-    : { bg: 'rgba(179,38,30,0.10)', text: '#a23b22', border: 'rgba(179,38,30,0.25)' };
+    ? { bg: 'rgba(169,121,26,0.12)', text: 'var(--red)', border: 'rgba(169,121,26,0.3)' }
+    : { bg: 'rgba(179,38,30,0.10)', text: 'var(--red)', border: 'rgba(179,38,30,0.25)' };
 
   return (
     <div>
@@ -787,7 +789,7 @@ function SessionsSection({ locations }) {
       {/* ── Crea sessione ── */}
       <div style={cardSty}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2 style={{ margin: 0, fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', fontSize: '1.05rem' }}>⚔️ Sessioni</h2>
+          <h2 style={{ margin: 0, fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', fontSize: '1.05rem' }}>⚔️ Sessioni</h2>
           <button onClick={() => setShowForm(!showForm)} style={showForm ? btnGray : btnGold}>
             {showForm ? '❌ Annulla' : '➕ Nuova Sessione'}
           </button>
@@ -796,7 +798,7 @@ function SessionsSection({ locations }) {
         {showForm && (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '16px', background: 'var(--bg-surface)', borderRadius: '8px', border: '1px solid var(--border)' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', marginBottom: '5px' }}>📍 Location</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', marginBottom: '5px' }}>📍 Location</label>
               <select name="location_id" value={formData.location_id} onChange={handleChange} required style={IS}>
                 {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
               </select>
@@ -804,52 +806,52 @@ function SessionsSection({ locations }) {
 
             <div className="form-grid-3">
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', marginBottom: '5px' }}>📅 Data</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', marginBottom: '5px' }}>📅 Data</label>
                 <input type="date" name="date" value={formData.date} onChange={handleChange} required style={IS} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', marginBottom: '5px' }}>🕐 Ora inizio</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', marginBottom: '5px' }}>🕐 Ora inizio</label>
                 <input type="time" name="start_hour" value={formData.start_hour} onChange={handleChange} required style={IS} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', marginBottom: '5px' }}>⏱ Durata (ore)</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', marginBottom: '5px' }}>⏱ Durata (ore)</label>
                 <input type="number" name="duration" min="0.5" step="0.5" value={formData.duration} onChange={handleChange} required style={IS} />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', marginBottom: '5px' }}>⚔️ Avventurieri massimi</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', marginBottom: '5px' }}>⚔️ Avventurieri massimi</label>
               <input type="number" name="required_count" min="1" value={formData.required_count} onChange={handleChange} style={{ ...IS, width: '140px' }} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(169,121,26,0.08)', border: '1px solid rgba(169,121,26,0.2)', borderRadius: '8px' }}>
               <input type="checkbox" id="has_pizza" name="has_pizza" checked={formData.has_pizza} onChange={handleChange}
-                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#b0801a' }} />
-              <label htmlFor="has_pizza" style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#b0801a', fontSize: '0.9rem', cursor: 'pointer', userSelect: 'none' }}>
+                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--gold)' }} />
+              <label htmlFor="has_pizza" style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--gold)', fontSize: '0.9rem', cursor: 'pointer', userSelect: 'none' }}>
                 🍕 Pizza inclusa in questa sessione
               </label>
             </div>
 
             {/* 👁 Visibilità: tutti oppure solo gruppi selezionati */}
             <div style={{ padding: '12px 14px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', marginBottom: '8px' }}>👁 Visibilità sessione</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', marginBottom: '8px' }}>👁 Visibilità sessione</label>
               <div style={{ display: 'flex', gap: '16px', marginBottom: formData.visible_to_all ? 0 : '10px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text)' }}>
                   <input type="radio" name="visibility" checked={formData.visible_to_all}
                     onChange={() => setFormData(p => ({ ...p, visible_to_all: true }))}
-                    style={{ accentColor: '#b0801a' }} />
+                    style={{ accentColor: 'var(--gold)' }} />
                   Tutti gli eroi
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text)' }}>
                   <input type="radio" name="visibility" checked={!formData.visible_to_all}
                     onChange={() => setFormData(p => ({ ...p, visible_to_all: false }))}
-                    style={{ accentColor: '#b0801a' }} />
+                    style={{ accentColor: 'var(--gold)' }} />
                   Solo gruppi selezionati
                 </label>
               </div>
               {!formData.visible_to_all && (
                 groups.length === 0 ? (
-                  <p style={{ fontSize: '0.78rem', color: '#8a7f6c', margin: 0 }}>Non hai ancora creato gruppi — vai nella tab "Gruppi" per crearne uno.</p>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: 0 }}>Non hai ancora creato gruppi — vai nella tab "Gruppi" per crearne uno.</p>
                 ) : (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {groups.map(g => (
@@ -857,11 +859,11 @@ function SessionsSection({ locations }) {
                         display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer',
                         fontSize: '0.8rem', padding: '4px 10px', borderRadius: '12px',
                         background: formData.group_ids.includes(g.id) ? 'rgba(169,121,26,0.16)' : 'var(--bg-card)',
-                        border: `1px solid ${formData.group_ids.includes(g.id) ? '#b0801a' : 'var(--border)'}`,
-                        color: formData.group_ids.includes(g.id) ? '#b0801a' : 'var(--text-muted)',
+                        border: `1px solid ${formData.group_ids.includes(g.id) ? 'var(--gold)' : 'var(--border)'}`,
+                        color: formData.group_ids.includes(g.id) ? 'var(--gold)' : 'var(--text-muted)',
                       }}>
                         <input type="checkbox" checked={formData.group_ids.includes(g.id)} onChange={() => toggleFormGroup(g.id)}
-                          style={{ accentColor: '#b0801a' }} />
+                          style={{ accentColor: 'var(--gold)' }} />
                         {g.name}
                       </label>
                     ))}
@@ -871,14 +873,14 @@ function SessionsSection({ locations }) {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <input type="checkbox" id="repeat" checked={repeat} onChange={e => setRepeat(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#b0801a' }} />
-              <label htmlFor="repeat" style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', fontSize: '0.85rem', cursor: 'pointer' }}>Sessione ripetitiva (settimanale)</label>
+              <input type="checkbox" id="repeat" checked={repeat} onChange={e => setRepeat(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--gold)' }} />
+              <label htmlFor="repeat" style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer' }}>Sessione ripetitiva (settimanale)</label>
             </div>
             {repeat && (
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', marginBottom: '5px' }}>Numero di settimane</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', marginBottom: '5px' }}>Numero di settimane</label>
                 <input type="number" min="1" max="52" value={weeks} onChange={e => setWeeks(parseInt(e.target.value))} style={{ ...IS, width: '100px' }} />
-                <p style={{ fontSize: '0.75rem', color: '#8a7f6c', marginTop: '4px' }}>Verranno create {weeks} sessioni.</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '4px' }}>Verranno create {weeks} sessioni.</p>
               </div>
             )}
 
@@ -893,10 +895,10 @@ function SessionsSection({ locations }) {
       {rangeMode !== 'trimestre' && (
         <div className="kpi-grid-2" style={{ marginBottom: '16px' }}>
           <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <p style={{ margin: 0, fontSize: '0.78rem', color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
               Sessioni {rangeMode === 'settimana' ? 'della settimana' : 'del mese'}
             </p>
-            <p style={{ margin: '4px 0 0', fontSize: '1.8rem', fontWeight: 900, color: '#b0801a', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{kpiSessionCount}</p>
+            <p style={{ margin: '4px 0 0', fontSize: '1.8rem', fontWeight: 900, color: 'var(--gold)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{kpiSessionCount}</p>
           </div>
           <div style={{ padding: '14px', borderRadius: '10px', background: kpiColor.bg, border: `1px solid ${kpiColor.border}` }}>
             <p style={{ margin: 0, fontSize: '0.78rem', color: kpiColor.text, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>% riempimento medio</p>
@@ -908,7 +910,7 @@ function SessionsSection({ locations }) {
       {/* ── Lista sessioni: settimana, mese o trimestre ── */}
       <div style={cardSty}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-          <h2 style={{ margin: 0, fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', fontSize: '1rem' }}>
+          <h2 style={{ margin: 0, fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', fontSize: '1rem' }}>
             📋 {rangeMode === 'settimana' ? 'Sessioni della settimana' : rangeMode === 'mese' ? 'Sessioni del mese' : 'Resoconto per trimestre'}
           </h2>
 
@@ -917,8 +919,8 @@ function SessionsSection({ locations }) {
             {['settimana', 'mese', 'trimestre'].map(mode => (
               <button key={mode} onClick={() => setRangeMode(mode)} style={{
                 padding: '5px 14px', borderRadius: '6px', fontSize: '0.78rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 600,
-                background: rangeMode === mode ? 'linear-gradient(135deg, #b0801a, #c99a35)' : 'transparent',
-                color: rangeMode === mode ? '#fffbf2' : '#6b5a3c', border: 'none', cursor: 'pointer',
+                background: rangeMode === mode ? 'linear-gradient(135deg, var(--gold), var(--gold-light))' : 'transparent',
+                color: rangeMode === mode ? 'var(--bg-card)' : 'var(--text-muted)', border: 'none', cursor: 'pointer',
               }}>
                 {mode === 'settimana' ? 'Settimana' : mode === 'mese' ? 'Mese' : 'Trimestre'}
               </button>
@@ -927,10 +929,10 @@ function SessionsSection({ locations }) {
         </div>
 
         {sessionsError && (
-          <div style={{ background: 'rgba(179,38,30,0.10)', border: '1px solid rgba(179,38,30,0.3)', color: '#a23b22', padding: '12px', borderRadius: '8px', marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ background: 'rgba(179,38,30,0.10)', border: '1px solid rgba(179,38,30,0.3)', color: 'var(--red)', padding: '12px', borderRadius: '8px', marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.85rem' }}>{sessionsError}</span>
             <button type="button" onClick={loadSessions} disabled={sessionsLoading}
-              style={{ padding: '6px 14px', borderRadius: '7px', background: 'rgba(179,38,30,0.12)', color: '#a23b22', border: '1px solid rgba(179,38,30,0.35)', cursor: sessionsLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', flexShrink: 0, opacity: sessionsLoading ? 0.5 : 1 }}>
+              style={{ padding: '6px 14px', borderRadius: '7px', background: 'rgba(179,38,30,0.12)', color: 'var(--red)', border: '1px solid rgba(179,38,30,0.35)', cursor: sessionsLoading ? 'default' : 'pointer', fontWeight: 700, fontSize: '0.8rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', flexShrink: 0, opacity: sessionsLoading ? 0.5 : 1 }}>
               {sessionsLoading ? '⏳ Riprovo...' : '🔄 Riprova'}
             </button>
           </div>
@@ -938,16 +940,16 @@ function SessionsSection({ locations }) {
 
         {rangeMode === 'trimestre' ? (
           sessionsLoading ? (
-            <p style={{ color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', textAlign: 'center', padding: '20px' }}>Caricamento...</p>
+            <p style={{ color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', textAlign: 'center', padding: '20px' }}>Caricamento...</p>
           ) : quarterlyData.length === 0 ? (
-            <p style={{ color: '#8a7f6c', textAlign: 'center', padding: '24px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Nessuna sessione nel periodo disponibile.</p>
+            <p style={{ color: 'var(--text-dim)', textAlign: 'center', padding: '24px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Nessuna sessione nel periodo disponibile.</p>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
                     {['Trimestre', 'Sessioni attive', 'Annullate', 'Iscritti totali', 'Riempimento medio'].map(h => (
-                      <th key={h} style={{ padding: '0 12px 8px 0', textAlign: h === 'Trimestre' ? 'left' : 'center', color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.7rem', letterSpacing: '1px' }}>{h}</th>
+                      <th key={h} style={{ padding: '0 12px 8px 0', textAlign: h === 'Trimestre' ? 'left' : 'center', color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.7rem', letterSpacing: '1px' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -956,17 +958,17 @@ function SessionsSection({ locations }) {
                     const avgFill = q.active > 0 ? Math.round((q.fillSum / q.active) * 100) : 0;
                     return (
                       <tr key={`${q.year}-${q.quarter}`} style={{ borderBottom: '1px solid var(--border)' }}>
-                        <td style={{ padding: '10px 12px 10px 0', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, color: '#b0801a' }}>Q{q.quarter} {q.year}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#2b6663', fontWeight: 600 }}>{q.active}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#a23b22' }}>{q.cancelled}</td>
+                        <td style={{ padding: '10px 12px 10px 0', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, color: 'var(--gold)' }}>Q{q.quarter} {q.year}</td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--green)', fontWeight: 600 }}>{q.active}</td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center', color: 'var(--red)' }}>{q.cancelled}</td>
                         <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: 'var(--text)' }}>{q.enrolled}</td>
-                        <td style={{ padding: '10px 0', textAlign: 'center', color: '#b0801a', fontWeight: 700 }}>{avgFill}%</td>
+                        <td style={{ padding: '10px 0', textAlign: 'center', color: 'var(--gold)', fontWeight: 700 }}>{avgFill}%</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-              <p style={{ fontSize: '0.72rem', color: '#8a7f6c', marginTop: '10px', fontStyle: 'italic' }}>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '10px', fontStyle: 'italic' }}>
                 Copre le sessioni attualmente caricate (circa 3 mesi indietro, 9 in avanti da oggi).
               </p>
             </div>
@@ -978,7 +980,7 @@ function SessionsSection({ locations }) {
               {rangeMode === 'settimana' ? (
                 <>
                   <button onClick={prevWeek} style={{ ...btnGray, padding: '4px 10px' }}>‹</button>
-                  <span style={{ fontSize: '0.82rem', color: '#6b5a3c', minWidth: '150px', textAlign: 'center', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', minWidth: '150px', textAlign: 'center', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
                     {fmtShortDate(weekStart)} – {fmtShortDate(weekEnd)}
                   </span>
                   <button onClick={nextWeek} style={{ ...btnGray, padding: '4px 10px' }}>›</button>
@@ -989,7 +991,7 @@ function SessionsSection({ locations }) {
               ) : (
                 <>
                   <button onClick={prevMonth} style={{ ...btnGray, padding: '4px 10px' }}>‹</button>
-                  <span style={{ fontSize: '0.82rem', color: '#6b5a3c', minWidth: '150px', textAlign: 'center', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', minWidth: '150px', textAlign: 'center', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
                     {MONTHS_IT[calMonth.month]} {calMonth.year}
                   </span>
                   <button onClick={nextMonth} style={{ ...btnGray, padding: '4px 10px' }}>›</button>
@@ -1001,9 +1003,9 @@ function SessionsSection({ locations }) {
             </div>
 
             {sessionsLoading ? (
-              <p style={{ color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', textAlign: 'center', padding: '20px' }}>Caricamento...</p>
+              <p style={{ color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', textAlign: 'center', padding: '20px' }}>Caricamento...</p>
             ) : visibleSessions.length === 0 ? (
-              <p style={{ color: '#8a7f6c', textAlign: 'center', padding: '24px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+              <p style={{ color: 'var(--text-dim)', textAlign: 'center', padding: '24px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
                 Nessuna sessione {rangeMode === 'settimana' ? 'questa settimana' : 'questo mese'}.
               </p>
             ) : (
@@ -1103,24 +1105,24 @@ function HeroesSection() {
   };
 
   const inputSty = {
-    width: '100%', padding: '9px 12px', backgroundColor: 'var(--bg-surface, #ece0c3)',
-    border: '1px solid var(--border, #ddd0b3)', borderRadius: '7px', color: 'var(--text, #262019)',
+    width: '100%', padding: '9px 12px', backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border)', borderRadius: '7px', color: 'var(--text)',
     fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box',
   };
 
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px' }}>
-      <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 6px', fontSize: '1.05rem' }}>🧙 Eroi registrati</h2>
-      <p style={{ fontSize: '0.78rem', color: '#8a7f6c', margin: '0 0 16px' }}>
+    <div className="bg-frame" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px' }}>
+      <h2 className="bg-cartouche" style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 6px', fontSize: '1.05rem' }}>🧙 Eroi registrati</h2>
+      <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '0 0 16px' }}>
         Promuovi un eroe ad admin con "→ Admin", oppure reimposta la sua password con 🔑.
       </p>
-      {loading ? <p style={{ color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Caricamento...</p> : (
+      {loading ? <p style={{ color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Caricamento...</p> : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: '0.88rem', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['Nome', 'Email', 'Ruolo', 'Azioni'].map(h => (
-                  <th key={h} style={{ paddingBottom: '8px', paddingRight: '16px', textAlign: 'left', color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.72rem', letterSpacing: '1px' }}>{h}</th>
+                  <th key={h} style={{ paddingBottom: '8px', paddingRight: '16px', textAlign: 'left', color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.72rem', letterSpacing: '1px' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1130,16 +1132,16 @@ function HeroesSection() {
                   <td style={{ padding: '10px 16px 10px 0', fontWeight: 700, color: 'var(--text)' }}>
                     {u.name}
                     <button onClick={() => openRename(u)} title="Rinomina eroe"
-                      style={{ background: 'none', border: 'none', color: '#8a7f6c', cursor: 'pointer', fontSize: '0.8rem', marginLeft: '6px' }}>
+                      style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '0.8rem', marginLeft: '6px' }}>
                       ✏️
                     </button>
                   </td>
-                  <td style={{ padding: '10px 16px 10px 0', color: '#6b5a3c' }}>{u.email}</td>
+                  <td style={{ padding: '10px 16px 10px 0', color: 'var(--text-muted)' }}>{u.email}</td>
                   <td style={{ padding: '10px 16px 10px 0' }}>
                     <span style={{
                       padding: '2px 10px', borderRadius: '10px', fontSize: '0.75rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700,
                       background: u.role === 'admin' ? 'rgba(169,121,26,0.14)' : 'rgba(47,125,58,0.14)',
-                      color: u.role === 'admin' ? '#b0801a' : '#2b6663',
+                      color: u.role === 'admin' ? 'var(--gold)' : 'var(--green)',
                     }}>
                       {u.role === 'admin' ? '🛡️ Admin' : '⚔️ Avventuriero'}
                     </span>
@@ -1147,12 +1149,12 @@ function HeroesSection() {
                   <td style={{ padding: '10px 0', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                     {u.id !== currentUser.id ? (
                       <button onClick={() => toggleRole(u)}
-                        style={{ background: 'none', border: 'none', color: '#b0801a', cursor: 'pointer', fontSize: '0.82rem', textDecoration: 'underline', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+                        style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontSize: '0.82rem', textDecoration: 'underline', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
                         {u.role === 'admin' ? '→ Avventuriero' : '→ Admin'}
                       </button>
-                    ) : <span style={{ fontSize: '0.78rem', color: '#8a7f6c' }}>Tu</span>}
+                    ) : <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Tu</span>}
                     <button onClick={() => openReset(u)} title="Reimposta password"
-                      style={{ background: 'none', border: 'none', color: '#6b5a3c', cursor: 'pointer', fontSize: '0.92rem' }}>
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.92rem' }}>
                       🔑
                     </button>
                   </td>
@@ -1171,34 +1173,35 @@ function HeroesSection() {
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: 'var(--bg-card, #fffbf2)', border: '1px solid var(--border-gold, #b0801a)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(80,60,20,0.25)', width: '100%', maxWidth: '360px', padding: '1.5rem' }}
+            className="bg-frame"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-gold, var(--gold))', borderRadius: '12px', boxShadow: '0 8px 32px rgba(80,60,20,0.25)', width: '100%', maxWidth: '360px', padding: '1.5rem' }}
           >
-            <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 4px', fontSize: '1rem' }}>🔑 Reimposta password</h3>
-            <p style={{ fontSize: '0.82rem', color: '#6b5a3c', margin: '0 0 16px' }}>Per <strong>{resetHero.name}</strong> ({resetHero.email})</p>
+            <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 4px', fontSize: '1rem' }}>🔑 Reimposta password</h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 16px' }}>Per <strong>{resetHero.name}</strong> ({resetHero.email})</p>
 
             {pwdDone ? (
               <div>
                 <div style={{ background: 'rgba(47,125,58,0.10)', border: '1px solid rgba(47,125,58,0.3)', borderRadius: '8px', padding: '12px', marginBottom: '14px' }}>
-                  <p style={{ margin: '0 0 8px', fontSize: '0.85rem', color: '#2b6663', fontWeight: 600 }}>✓ Password reimpostata</p>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#6b5a3c' }}>Comunicala a {resetHero.name}:</p>
+                  <p style={{ margin: '0 0 8px', fontSize: '0.85rem', color: 'var(--green)', fontWeight: 600 }}>✓ Password reimpostata</p>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Comunicala a {resetHero.name}:</p>
                   <p style={{ margin: '6px 0 0', fontFamily: 'monospace', fontSize: '1rem', background: 'var(--bg-surface)', padding: '8px 10px', borderRadius: '6px', color: 'var(--text)', letterSpacing: '1px' }}>
                     {newPwd}
                   </p>
                 </div>
-                <button onClick={closeReset} style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, cursor: 'pointer' }}>
+                <button onClick={closeReset} style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, cursor: 'pointer' }}>
                   Chiudi
                 </button>
               </div>
             ) : (
               <>
               <button type="button" onClick={handleSendLink} disabled={sendingLink || linkMsg?.ok}
-                style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, cursor: 'pointer', opacity: sendingLink ? 0.6 : 1 }}>
+                style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, cursor: 'pointer', opacity: sendingLink ? 0.6 : 1 }}>
                 {sendingLink ? 'Invio...' : linkMsg?.ok ? '✓ Link inviato' : '📧 Manda link via email (consigliato)'}
               </button>
-              <p style={{ fontSize: '0.78rem', margin: '6px 0 14px', color: linkMsg && !linkMsg.ok ? '#a23b22' : '#8a7f6c' }}>
+              <p style={{ fontSize: '0.78rem', margin: '6px 0 14px', color: linkMsg && !linkMsg.ok ? 'var(--red)' : 'var(--text-dim)' }}>
                 {linkMsg ? linkMsg.text : 'Riceverà un link valido un’ora per scegliere da solo la nuova password.'}
               </p>
-              <p style={{ fontSize: '0.75rem', color: '#8a7f6c', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Oppure impostala tu</p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Oppure impostala tu</p>
               <form onSubmit={handleResetPwd} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ position: 'relative' }}>
                   <input
@@ -1216,16 +1219,16 @@ function HeroesSection() {
                   </button>
                 </div>
                 <button type="button" onClick={generateRandomPwd}
-                  style={{ background: 'none', border: 'none', color: '#b0801a', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', textAlign: 'left', padding: 0 }}>
+                  style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontSize: '0.8rem', textDecoration: 'underline', textAlign: 'left', padding: 0 }}>
                   🎲 Genera password casuale
                 </button>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
                   <button type="submit" disabled={savingPwd}
-                    style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, cursor: 'pointer', opacity: savingPwd ? 0.6 : 1 }}>
+                    style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, cursor: 'pointer', opacity: savingPwd ? 0.6 : 1 }}>
                     {savingPwd ? 'Salvataggio...' : 'Reimposta'}
                   </button>
                   <button type="button" onClick={closeReset}
-                    style={{ padding: '10px 16px', background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #ddd0b3', borderRadius: '8px', cursor: 'pointer' }}>
+                    style={{ padding: '10px 16px', background: 'rgba(217,201,158,0.35)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer' }}>
                     Annulla
                   </button>
                 </div>
@@ -1244,17 +1247,18 @@ function HeroesSection() {
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: 'var(--bg-card, #fffbf2)', border: '1px solid var(--border-gold, #b0801a)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(80,60,20,0.25)', width: '100%', maxWidth: '340px', padding: '1.5rem' }}
+            className="bg-frame"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-gold, var(--gold))', borderRadius: '12px', boxShadow: '0 8px 32px rgba(80,60,20,0.25)', width: '100%', maxWidth: '340px', padding: '1.5rem' }}
           >
-            <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 4px', fontSize: '1rem' }}>✏️ Rinomina eroe</h3>
-            <p style={{ fontSize: '0.78rem', color: '#8a7f6c', margin: '0 0 14px' }}>{renameHero.email} (l'email non cambia)</p>
+            <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 4px', fontSize: '1rem' }}>✏️ Rinomina eroe</h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '0 0 14px' }}>{renameHero.email} (l'email non cambia)</p>
             <form onSubmit={handleRename} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <input type="text" value={newName} onChange={e => setNewName(e.target.value)} required autoFocus style={inputSty} />
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button type="submit" disabled={savingName} style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, cursor: 'pointer', opacity: savingName ? 0.6 : 1 }}>
+                <button type="submit" disabled={savingName} style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '8px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, cursor: 'pointer', opacity: savingName ? 0.6 : 1 }}>
                   {savingName ? 'Salvataggio...' : 'Salva'}
                 </button>
-                <button type="button" onClick={closeRename} style={{ padding: '10px 16px', background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #ddd0b3', borderRadius: '8px', cursor: 'pointer' }}>
+                <button type="button" onClick={closeRename} style={{ padding: '10px 16px', background: 'rgba(217,201,158,0.35)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer' }}>
                   Annulla
                 </button>
               </div>
@@ -1309,17 +1313,17 @@ function StatsSection() {
   return (
     <div>
       <div style={cardSty}>
-        <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 16px', fontSize: '1.05rem' }}>📊 Statistiche</h2>
+        <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 16px', fontSize: '1.05rem' }}>📊 Statistiche</h2>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', marginBottom: '4px' }}>Anno</label>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', marginBottom: '4px' }}>Anno</label>
             <select value={year} onChange={e => setYear(e.target.value)} style={selSty}>
               <option value="">Tutti</option>
               {Array.from({length: 5}, (_,i) => String(currentYear-i)).map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', marginBottom: '4px' }}>Mese</label>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', marginBottom: '4px' }}>Mese</label>
             <select value={month} onChange={e => setMonth(e.target.value)} style={selSty}>
               <option value="">Tutti</option>
               {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
@@ -1329,20 +1333,20 @@ function StatsSection() {
       </div>
 
       {loading ? (
-        <div style={cardSty}><p style={{ color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Caricamento...</p></div>
+        <div style={cardSty}><p style={{ color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Caricamento...</p></div>
       ) : (
         <>
           <div style={cardSty}>
-            <h3 style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>👥 Eroi</h3>
+            <h3 style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>👥 Eroi</h3>
             <div className="form-grid-3">
               {[
-                { label: 'Avventurieri totali', val: avventurieriTotali, color: '#262019', bg: 'rgba(217,201,158,0.3)' },
-                { label: 'Attivi nel periodo', val: avventurieriAttivi, color: '#2b6663', bg: 'rgba(47,125,58,0.12)' },
-                { label: 'Admin', val: numeroAdmin, color: '#b0801a', bg: 'rgba(169,121,26,0.12)' },
+                { label: 'Avventurieri totali', val: avventurieriTotali, color: 'var(--text)', bg: 'rgba(217,201,158,0.3)' },
+                { label: 'Attivi nel periodo', val: avventurieriAttivi, color: 'var(--green)', bg: 'rgba(47,125,58,0.12)' },
+                { label: 'Admin', val: numeroAdmin, color: 'var(--gold)', bg: 'rgba(169,121,26,0.12)' },
               ].map(({label, val, color, bg}) => (
                 <div key={label} style={{ textAlign: 'center', padding: '12px', background: bg, borderRadius: '8px' }}>
                   <div style={{ fontSize: '1.8rem', fontWeight: 900, color, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{val}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#6b5a3c', marginTop: '4px' }}>{label}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>{label}</div>
                 </div>
               ))}
             </div>
@@ -1350,16 +1354,16 @@ function StatsSection() {
 
           {shiftStats && (
             <div style={cardSty}>
-              <h3 style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>📋 Riepilogo sessioni nel periodo</h3>
+              <h3 style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>📋 Riepilogo sessioni nel periodo</h3>
               <div className="form-grid-3">
                 {[
-                  { label: 'Sessioni totali', val: shiftStats.total_shifts, color: '#262019', bg: 'rgba(217,201,158,0.3)' },
-                  { label: 'Sessioni attive', val: shiftStats.active_shifts, color: '#2b6663', bg: 'rgba(47,125,58,0.12)' },
-                  { label: 'Annullate', val: shiftStats.cancelled_shifts, color: '#a23b22', bg: 'rgba(169,121,26,0.12)' },
+                  { label: 'Sessioni totali', val: shiftStats.total_shifts, color: 'var(--text)', bg: 'rgba(217,201,158,0.3)' },
+                  { label: 'Sessioni attive', val: shiftStats.active_shifts, color: 'var(--green)', bg: 'rgba(47,125,58,0.12)' },
+                  { label: 'Annullate', val: shiftStats.cancelled_shifts, color: 'var(--red)', bg: 'rgba(169,121,26,0.12)' },
                 ].map(({label, val, color, bg}) => (
                   <div key={label} style={{ textAlign: 'center', padding: '12px', background: bg, borderRadius: '8px' }}>
                     <div style={{ fontSize: '1.8rem', fontWeight: 900, color, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{val}</div>
-                    <div style={{ fontSize: '0.72rem', color: '#6b5a3c', marginTop: '4px' }}>{label}</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>{label}</div>
                   </div>
                 ))}
               </div>
@@ -1367,32 +1371,32 @@ function StatsSection() {
           )}
 
           <div style={cardSty}>
-            <h3 style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#6b5a3c', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>⚔️ Sessioni per avventuriero</h3>
+            <h3 style={{ fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0 0 12px', letterSpacing: '1px' }}>⚔️ Sessioni per avventuriero</h3>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
                     {['#','Avventuriero','Prenotazioni','Attive','Annullate','Ore totali'].map(h => (
-                      <th key={h} style={{ paddingBottom: '8px', paddingRight: '12px', textAlign: h==='#'?'left':'center', color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.7rem', letterSpacing: '1px' }}>{h}</th>
+                      <th key={h} style={{ paddingBottom: '8px', paddingRight: '12px', textAlign: h==='#'?'left':'center', color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.7rem', letterSpacing: '1px' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {stats.map((s, i) => (
                     <tr key={s.id} style={{ borderBottom: '1px solid var(--border)', opacity: s.total_bookings === 0 ? 0.5 : 1 }}>
-                      <td style={{ padding: '8px 12px 8px 0', color: '#8a7f6c' }}>{i+1}</td>
+                      <td style={{ padding: '8px 12px 8px 0', color: 'var(--text-dim)' }}>{i+1}</td>
                       <td style={{ padding: '8px 12px 8px 0' }}>
                         <div style={{ fontWeight: 700, color: 'var(--text)' }}>{s.name}</div>
-                        <div style={{ fontSize: '0.72rem', color: '#8a7f6c' }}>{s.email}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{s.email}</div>
                       </td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#262019' }}>{s.total_bookings}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#2b6663', fontWeight: 600 }}>{s.active_bookings}</td>
-                      <td style={{ padding: '8px 12px', textAlign: 'center', color: '#a23b22' }}>{s.cancelled_bookings}</td>
-                      <td style={{ padding: '8px 0', textAlign: 'center', color: '#b0801a', fontWeight: 700, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{s.total_hours}h</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: 'var(--text)' }}>{s.total_bookings}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--green)', fontWeight: 600 }}>{s.active_bookings}</td>
+                      <td style={{ padding: '8px 12px', textAlign: 'center', color: 'var(--red)' }}>{s.cancelled_bookings}</td>
+                      <td style={{ padding: '8px 0', textAlign: 'center', color: 'var(--gold)', fontWeight: 700, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>{s.total_hours}h</td>
                     </tr>
                   ))}
                   {stats.length === 0 && (
-                    <tr><td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: '#8a7f6c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Nessun dato disponibile</td></tr>
+                    <tr><td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: 'var(--text-dim)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Nessun dato disponibile</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1435,19 +1439,19 @@ function LocationsSection() {
   };
 
   const cardSty = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px' };
-  const btnGold = { background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.82rem', padding: '8px 16px', cursor: 'pointer' };
-  const btnGray = { background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #ddd0b3', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem' };
+  const btnGold = { background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.82rem', padding: '8px 16px', cursor: 'pointer' };
+  const btnGray = { background: 'rgba(217,201,158,0.35)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem' };
 
   return (
     <div style={cardSty}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: 0, fontSize: '1.05rem' }}>📍 Locations</h2>
+        <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: 0, fontSize: '1.05rem' }}>📍 Locations</h2>
         {!showForm && <button onClick={startNew} style={btnGold}>➕ Aggiungi Location</button>}
       </div>
 
       {showForm && (
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', padding: '14px', background: 'var(--bg-surface)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-          <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#6b5a3c', margin: '0 0 6px', fontSize: '0.88rem' }}>
+          <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--text-muted)', margin: '0 0 6px', fontSize: '0.88rem' }}>
             {editingId ? 'Modifica Location' : 'Nuova Location'}
           </h3>
           <input type="text" value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
@@ -1461,17 +1465,17 @@ function LocationsSection() {
         </form>
       )}
 
-      {loading ? <p style={{ color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Caricamento...</p>
-        : locations.length === 0 ? <p style={{ color: '#8a7f6c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Nessuna location. Aggiungine una!</p>
+      {loading ? <p style={{ color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Caricamento...</p>
+        : locations.length === 0 ? <p style={{ color: 'var(--text-dim)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Nessuna location. Aggiungine una!</p>
         : (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {locations.map(loc => (
               <li key={loc.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <div style={{ fontWeight: 700, color: '#b0801a', fontFamily: 'Titan One, Luckiest Guy, fantasy', fontSize: '0.9rem' }}>{loc.name}</div>
-                  {loc.address && <div style={{ fontSize: '0.82rem', color: '#6b5a3c', marginTop: '2px' }}>{loc.address}</div>}
+                  <div style={{ fontWeight: 700, color: 'var(--gold)', fontFamily: 'Titan One, Luckiest Guy, fantasy', fontSize: '0.9rem' }}>{loc.name}</div>
+                  {loc.address && <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '2px' }}>{loc.address}</div>}
                 </div>
-                <button onClick={() => startEdit(loc)} style={{ background: 'none', border: 'none', color: '#b0801a', cursor: 'pointer', fontSize: '0.82rem', textDecoration: 'underline', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+                <button onClick={() => startEdit(loc)} style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontSize: '0.82rem', textDecoration: 'underline', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
                   ✏️ Modifica
                 </button>
               </li>
@@ -1559,14 +1563,14 @@ function GroupsSection() {
   };
 
   const cardSty = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', marginBottom: '16px' };
-  const btnGold = { background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.82rem', padding: '8px 16px', cursor: 'pointer' };
-  const btnGray = { background: 'rgba(217,201,158,0.35)', color: '#6b5a3c', border: '1px solid #ddd0b3', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem' };
+  const btnGold = { background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.82rem', padding: '8px 16px', cursor: 'pointer' };
+  const btnGray = { background: 'rgba(217,201,158,0.35)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: '7px', padding: '8px 14px', cursor: 'pointer', fontSize: '0.82rem' };
 
   return (
     <div>
       <div style={cardSty}>
-        <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 6px', fontSize: '1.05rem' }}>👥 Gruppi</h2>
-        <p style={{ fontSize: '0.78rem', color: '#8a7f6c', margin: '0 0 16px' }}>
+        <h2 className="bg-cartouche" style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 6px', fontSize: '1.05rem' }}>👥 Gruppi</h2>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '0 0 16px' }}>
           Crea gruppi di eroi (es. "Tavolo Rosso", "Junior") per riservare certe sessioni solo a loro.
         </p>
         <form onSubmit={handleCreate} style={{ display: 'flex', gap: '8px', marginBottom: '18px' }}>
@@ -1575,15 +1579,15 @@ function GroupsSection() {
           <button type="submit" disabled={creating} style={btnGold}>➕ Crea</button>
         </form>
 
-        {loading ? <p style={{ color: '#6b5a3c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Caricamento...</p>
-          : groups.length === 0 ? <p style={{ color: '#8a7f6c', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Nessun gruppo ancora creato.</p>
+        {loading ? <p style={{ color: 'var(--text-muted)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Caricamento...</p>
+          : groups.length === 0 ? <p style={{ color: 'var(--text-dim)', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>Nessun gruppo ancora creato.</p>
           : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {groups.map(g => (
                 <div key={g.id} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'var(--bg-page)', border: '1px solid var(--border)', borderRadius: '8px' }}>
                   <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-                    <span style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', fontWeight: 700, color: '#b0801a', fontSize: '0.92rem' }}>{g.name}</span>
-                    <span style={{ marginLeft: '10px', fontSize: '0.78rem', color: '#8a7f6c', overflowWrap: 'break-word' }}>
+                    <span style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', fontWeight: 700, color: 'var(--gold)', fontSize: '0.92rem' }}>{g.name}</span>
+                    <span style={{ marginLeft: '10px', fontSize: '0.78rem', color: 'var(--text-dim)', overflowWrap: 'break-word' }}>
                       {g.members.length === 0 ? 'nessun membro' : g.members.map(m => m.name).join(', ')}
                     </span>
                   </div>
@@ -1611,18 +1615,19 @@ function GroupsSection() {
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: 'var(--bg-card, #fffbf2)', border: '1px solid var(--border-gold, #b0801a)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(80,60,20,0.25)', width: '100%', maxWidth: '380px', padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}
+            className="bg-frame"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-gold, var(--gold))', borderRadius: '12px', boxShadow: '0 8px 32px rgba(80,60,20,0.25)', width: '100%', maxWidth: '380px', padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}
           >
-            <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 4px', fontSize: '1rem' }}>👥 Membri di "{editingGroup.name}"</h3>
-            <p style={{ fontSize: '0.78rem', color: '#8a7f6c', margin: '0 0 14px' }}>Seleziona chi fa parte di questo gruppo.</p>
+            <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 4px', fontSize: '1rem' }}>👥 Membri di "{editingGroup.name}"</h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '0 0 14px' }}>Seleziona chi fa parte di questo gruppo.</p>
             {heroes.length === 0 ? (
-              <p style={{ fontSize: '0.85rem', color: '#8a7f6c' }}>Nessun eroe registrato ancora.</p>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>Nessun eroe registrato ancora.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
                 {heroes.map(h => (
                   <label key={h.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text)' }}>
-                    <input type="checkbox" checked={memberIds.includes(h.id)} onChange={() => toggleMember(h.id)} style={{ width: '16px', height: '16px', accentColor: '#b0801a' }} />
-                    {h.name} <span style={{ color: '#8a7f6c', fontSize: '0.78rem' }}>({h.email})</span>
+                    <input type="checkbox" checked={memberIds.includes(h.id)} onChange={() => toggleMember(h.id)} style={{ width: '16px', height: '16px', accentColor: 'var(--gold)' }} />
+                    {h.name} <span style={{ color: 'var(--text-dim)', fontSize: '0.78rem' }}>({h.email})</span>
                   </label>
                 ))}
               </div>
@@ -1672,21 +1677,21 @@ function PrivacyEditorSection() {
   };
 
   const cardSty = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px' };
-  const btnGold = { background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.85rem', padding: '10px 20px', cursor: 'pointer' };
+  const btnGold = { background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '7px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, fontSize: '0.85rem', padding: '10px 20px', cursor: 'pointer' };
 
   return (
     <div style={cardSty}>
-      <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', margin: '0 0 6px', fontSize: '1.05rem' }}>📄 Informativa privacy</h2>
-      <p style={{ fontSize: '0.78rem', color: '#8a7f6c', margin: '0 0 4px' }}>
+      <h2 className="bg-cartouche" style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 6px', fontSize: '1.05rem' }}>📄 Informativa privacy</h2>
+      <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', margin: '0 0 4px' }}>
         Il testo qui sotto è quello mostrato pubblicamente sulla pagina <code>/privacy</code>, raggiungibile anche dal link in fondo alla Dashboard e dal modulo di registrazione. Modificalo liberamente: non serve nessuna pubblicazione di codice.
       </p>
       {updatedAt && (
-        <p style={{ fontSize: '0.75rem', color: '#8a7f6c', margin: '0 0 14px', fontStyle: 'italic' }}>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', margin: '0 0 14px', fontStyle: 'italic' }}>
           Ultimo aggiornamento: {new Date(updatedAt).toLocaleString('it-IT')}
         </p>
       )}
       {loading ? (
-        <p style={{ color: '#6b5a3c' }}>Caricamento...</p>
+        <p style={{ color: 'var(--text-muted)' }}>Caricamento...</p>
       ) : (
         <>
           <textarea
@@ -1699,15 +1704,15 @@ function PrivacyEditorSection() {
               fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', resize: 'vertical', boxSizing: 'border-box',
             }}
           />
-          <p style={{ fontSize: '0.72rem', color: '#8a7f6c', margin: '6px 0 14px' }}>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)', margin: '6px 0 14px' }}>
             Suggerimento: lascia una riga vuota tra un paragrafo e l'altro — è così che la pagina pubblica li separa visivamente.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button onClick={handleSave} disabled={saving} style={{ ...btnGold, opacity: saving ? 0.6 : 1 }}>
               {saving ? 'Salvataggio...' : '💾 Salva modifiche'}
             </button>
-            {saved && <span style={{ color: '#2b6663', fontSize: '0.85rem', fontWeight: 700 }}>✅ Salvato</span>}
-            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', color: '#8a7f6c', textDecoration: 'underline' }}>
+            {saved && <span style={{ color: 'var(--green)', fontSize: '0.85rem', fontWeight: 700 }}>✅ Salvato</span>}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.82rem', color: 'var(--text-dim)', textDecoration: 'underline' }}>
               👁 Vedi la pagina pubblica
             </a>
           </div>
@@ -1734,8 +1739,8 @@ export default function AdminPage() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)' }}>
         <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#a23b22' }}>❌ Accesso negato</h1>
-          <button onClick={() => navigate('/dashboard')} style={{ background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: 'none', borderRadius: '8px', padding: '10px 20px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, cursor: 'pointer' }}>
+          <h1 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--red)' }}>❌ Accesso negato</h1>
+          <button onClick={() => navigate('/dashboard')} style={{ background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: 'none', borderRadius: '8px', padding: '10px 20px', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 700, cursor: 'pointer' }}>
             Torna alla Dashboard
           </button>
         </div>
@@ -1755,20 +1760,21 @@ export default function AdminPage() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-page, #f4ead4)' }}>
-      <header style={{ background: 'linear-gradient(180deg, #fffbf2, #f4ead4)', borderBottom: '2px solid #ddd0b3', boxShadow: '0 2px 10px rgba(80,60,20,0.08)' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ margin: 0, fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', fontSize: '1.05rem' }}>🛡️ Pannello Admin</h1>
-          <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: '#b0801a', cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.85rem', textDecoration: 'underline' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-page)' }}>
+      <header style={{ background: 'linear-gradient(180deg, var(--bg-card), var(--bg-page))', borderBottom: '2px solid var(--border)', boxShadow: '0 2px 10px rgba(80,60,20,0.08)' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '14px 16px', display: 'flex', gap: '14px', alignItems: 'center' }}>
+          <h1 style={{ margin: 0, marginRight: 'auto', fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', fontSize: '1.05rem' }}>🛡️ Pannello Admin</h1>
+          <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.85rem', textDecoration: 'underline' }}>
             ← Dashboard
           </button>
+          <ThemeToggle />
         </div>
         <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 16px', display: 'flex', gap: '2px', overflowX: 'auto' }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               padding: '10px 18px', fontSize: '0.82rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 600,
-              background: 'none', border: 'none', borderBottom: `2px solid ${tab === t.id ? '#b0801a' : 'transparent'}`,
-              color: tab === t.id ? '#b0801a' : '#6b5a3c', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s',
+              background: 'none', border: 'none', borderBottom: `2px solid ${tab === t.id ? 'var(--gold)' : 'transparent'}`,
+              color: tab === t.id ? 'var(--gold)' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s',
             }}>
               {t.label}
             </button>

@@ -46,34 +46,34 @@ export default function AccountModal({ onClose }) {
     }
   };
 
-  const input = { width: '100%', padding: '10px 12px', background: '#ece0c3', border: '1px solid #ddd0b3', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box', color: '#262019' };
-  const h = { fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', fontSize: '1rem', margin: '0 0 10px' };
+  const input = { width: '100%', padding: '10px 12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box', color: 'var(--text)' };
+  const h = { fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', fontSize: '1rem', margin: '0 0 10px' };
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(44,32,17,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: '16px' }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: '#fffbf2', border: '1px solid #ddd0b3', borderRadius: '12px', padding: '1.5rem', width: '100%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: '#262019' }}>
+      <div onClick={e => e.stopPropagation()} className="bg-frame" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '1.5rem', width: '100%', maxWidth: '400px', maxHeight: '90vh', overflowY: 'auto', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', color: 'var(--text)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h2 style={{ ...h, fontSize: '1.2rem', margin: 0 }}>⚔️ Il mio account</h2>
-          <button onClick={onClose} aria-label="Chiudi" style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: '#8a7f6c', cursor: 'pointer' }}>×</button>
+          <button onClick={onClose} aria-label="Chiudi" style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-dim)', cursor: 'pointer' }}>×</button>
         </div>
 
         <h3 style={h}>📜 Newsletter</h3>
         <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '0.9rem', lineHeight: 1.45, cursor: 'pointer' }}>
-          <input type="checkbox" disabled={newsletter === null} checked={!!newsletter} onChange={e => toggleNewsletter(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#b0801a', marginTop: '2px' }} />
+          <input type="checkbox" disabled={newsletter === null} checked={!!newsletter} onChange={e => toggleNewsletter(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: 'var(--gold)', marginTop: '2px' }} />
           <span>Ricevi via email le novità e le nuove sessioni. Gli avvisi sulle sessioni a cui sei iscritto arrivano comunque.</span>
         </label>
-        {nlMsg && <p style={{ fontSize: '0.82rem', color: '#6b5a3c', margin: '6px 0 0' }}>{nlMsg}</p>}
+        {nlMsg && <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '6px 0 0' }}>{nlMsg}</p>}
 
         <h3 style={{ ...h, marginTop: '24px' }}>🔑 Cambia password</h3>
         <form onSubmit={changePassword} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <input type="password" placeholder="Password attuale" autoComplete="current-password" value={pw.current} onChange={e => setPw({ ...pw, current: e.target.value })} required style={input} />
           <input type="password" placeholder="Nuova password (min 8 caratteri)" autoComplete="new-password" value={pw.next} onChange={e => setPw({ ...pw, next: e.target.value })} required style={input} />
-          {pwMsg && <p style={{ fontSize: '0.85rem', margin: 0, color: pwMsg.ok ? '#4a6b2a' : '#a23b22' }}>{pwMsg.text}</p>}
-          <button type="submit" disabled={saving} style={{ padding: '10px', background: 'linear-gradient(135deg, #b0801a, #c99a35)', color: '#fffbf2', border: '1px solid #b0801a', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
+          {pwMsg && <p style={{ fontSize: '0.85rem', margin: 0, color: pwMsg.ok ? 'var(--green)' : 'var(--red)' }}>{pwMsg.text}</p>}
+          <button type="submit" disabled={saving} style={{ padding: '10px', background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: 'var(--on-gold)', border: '1px solid var(--gold)', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
             {saving ? '⏳ Salvataggio...' : 'Cambia password'}
           </button>
         </form>
-        <p style={{ fontSize: '0.78rem', color: '#8a7f6c', marginTop: '10px' }}>Non ricordi quella attuale? Esci e usa «Password dimenticata?» nella pagina di accesso.</p>
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '10px' }}>Non ricordi quella attuale? Esci e usa «Password dimenticata?» nella pagina di accesso.</p>
       </div>
     </div>
   );

@@ -21,9 +21,9 @@ function DerganoLogo() {
       />
       {/* Separatore ornamentale */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', maxWidth: '320px', marginTop: '4px' }}>
-        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #b0801a, transparent)' }} />
-        <span style={{ color: '#b0801a', fontSize: '0.7rem' }}>✦</span>
-        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, #b0801a, transparent)' }} />
+        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, var(--gold), transparent)' }} />
+        <span style={{ color: 'var(--gold)', fontSize: '0.7rem' }}>✦</span>
+        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, var(--gold), transparent)' }} />
       </div>
     </div>
   );
@@ -78,8 +78,8 @@ export default function AuthPage() {
   };
 
   const cardStyle = {
-    backgroundColor: 'var(--bg-card, #fffbf2)',
-    border: '1px solid var(--border, #ddd0b3)',
+    backgroundColor: 'var(--bg-card)',
+    border: '1px solid var(--border)',
     borderRadius: '12px',
     padding: '2.5rem',
     width: '100%',
@@ -90,10 +90,10 @@ export default function AuthPage() {
   const inputStyle = {
     width: '100%',
     padding: '10px 14px',
-    backgroundColor: 'var(--bg-surface, #ece0c3)',
-    border: '1px solid var(--border, #ddd0b3)',
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border)',
     borderRadius: '8px',
-    color: 'var(--text, #262019)',
+    color: 'var(--text)',
     fontSize: '0.95rem',
     fontFamily: 'var(--font-body, serif)',
     outline: 'none',
@@ -103,9 +103,9 @@ export default function AuthPage() {
   const btnStyle = {
     width: '100%',
     padding: '11px',
-    background: 'linear-gradient(135deg, #b0801a, #c99a35)',
-    color: '#fffbf2',
-    border: '1px solid #b0801a',
+    background: 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+    color: 'var(--on-gold)',
+    border: '1px solid var(--gold)',
     borderRadius: '8px',
     fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif',
     fontWeight: 700,
@@ -123,16 +123,16 @@ export default function AuthPage() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
-      background: 'radial-gradient(ellipse at center, #fffbf2 0%, #f4ead4 100%)',
+      background: 'radial-gradient(ellipse at center, var(--bg-card) 0%, var(--bg-page) 100%)',
     }}>
-      <div style={cardStyle}>
+      <div className="bg-frame" style={cardStyle}>
         <DerganoLogo />
 
         <h2 style={{
           fontFamily: 'Titan One, Luckiest Guy, fantasy',
           fontSize: '0.95rem',
           textAlign: 'center',
-          color: 'var(--text-muted, #6b5a3c)',
+          color: 'var(--text-muted)',
           marginBottom: '1.5rem',
           marginTop: '1rem',
           letterSpacing: '1px',
@@ -144,7 +144,7 @@ export default function AuthPage() {
           <div style={{
             background: 'rgba(169,121,26,0.12)',
             border: '1px solid rgba(169,121,26,0.35)',
-            color: '#8a6a14',
+            color: 'var(--gold-deep)',
             padding: '10px 14px',
             borderRadius: '8px',
             marginBottom: '16px',
@@ -158,7 +158,7 @@ export default function AuthPage() {
           <div style={{
             background: 'rgba(179,38,30,0.10)',
             border: '1px solid rgba(179,38,30,0.35)',
-            color: '#a23b22',
+            color: 'var(--red)',
             padding: '10px 14px',
             borderRadius: '8px',
             marginBottom: '16px',
@@ -204,24 +204,24 @@ export default function AuthPage() {
               onClick={() => setShowPwd(!showPwd)}
               style={{
                 position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: '#8a7f6c',
+                background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: 'var(--text-dim)',
               }}
             >
               {showPwd ? '🙈' : '👁'}
             </button>
           </div>
           {!isLogin && (
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.82rem', color: 'var(--text-muted, #6b5a3c)', cursor: 'pointer', lineHeight: 1.4 }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.82rem', color: 'var(--text-muted)', cursor: 'pointer', lineHeight: 1.4 }}>
               <input
                 type="checkbox"
                 checked={privacyAccepted}
                 onChange={e => setPrivacyAccepted(e.target.checked)}
                 required
-                style={{ marginTop: '2px', width: '15px', height: '15px', accentColor: '#b0801a', flexShrink: 0 }}
+                style={{ marginTop: '2px', width: '15px', height: '15px', accentColor: 'var(--gold)', flexShrink: 0 }}
               />
               <span>
                 Ho letto e accetto{' '}
-                <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#b0801a', fontWeight: 700 }}>
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)', fontWeight: 700 }}>
                   l'informativa privacy
                 </a>
                 . Se ho meno di 14 anni, confermo che questa registrazione è stata effettuata con il consenso di un genitore o tutore.
@@ -229,12 +229,12 @@ export default function AuthPage() {
             </label>
           )}
           {!isLogin && (
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.82rem', color: 'var(--text-muted, #6b5a3c)', cursor: 'pointer', lineHeight: 1.4 }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.82rem', color: 'var(--text-muted)', cursor: 'pointer', lineHeight: 1.4 }}>
               <input
                 type="checkbox"
                 checked={newsletter}
                 onChange={e => setNewsletter(e.target.checked)}
-                style={{ marginTop: '2px', width: '15px', height: '15px', accentColor: '#b0801a', flexShrink: 0 }}
+                style={{ marginTop: '2px', width: '15px', height: '15px', accentColor: 'var(--gold)', flexShrink: 0 }}
               />
               <span>Voglio ricevere la newsletter con le novità e le nuove sessioni (facoltativo, puoi cambiare idea quando vuoi).</span>
             </label>
@@ -244,11 +244,11 @@ export default function AuthPage() {
           </button>
         </form>
 
-        <div style={{ marginTop: '1.5rem', textAlign: 'center', color: 'var(--text-muted, #6b5a3c)', fontSize: '0.88rem' }}>
+        <div style={{ marginTop: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
           {isLogin ? 'Non hai ancora un Eroe? ' : 'Hai già un account? '}
           <button
             onClick={() => setIsLogin(!isLogin)}
-            style={{ background: 'none', border: 'none', color: '#b0801a', cursor: 'pointer', fontWeight: 700, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', textDecoration: 'underline' }}
+            style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontWeight: 700, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', textDecoration: 'underline' }}
           >
             {isLogin ? 'Registrati' : 'Accedi'}
           </button>
@@ -259,7 +259,7 @@ export default function AuthPage() {
               onClick={() => { setResetEmail(formData.email); setResetMsg(null); setShowReset(true); }}
               style={{
                 display: 'block', width: '100%', marginTop: '10px',
-                background: 'none', border: 'none', color: '#8a7f6c',
+                background: 'none', border: 'none', color: 'var(--text-dim)',
                 cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline',
               }}
             >
@@ -276,12 +276,12 @@ export default function AuthPage() {
           background: 'rgba(44,32,17,0.45)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
         }}>
-          <div style={{ ...cardStyle, maxWidth: '340px' }}>
-            <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: '#b0801a', marginBottom: '16px' }}>🔑 Password dimenticata?</h3>
+          <div className="bg-frame" style={{ ...cardStyle, maxWidth: '340px' }}>
+            <h3 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', marginBottom: '16px' }}>🔑 Password dimenticata?</h3>
             {resetMsg?.ok ? (
               <>
-                <p style={{ color: '#6b5a3c', fontSize: '0.9rem', lineHeight: 1.55, marginBottom: '16px' }}>{resetMsg.text}</p>
-                <p style={{ color: '#8a7f6c', fontSize: '0.8rem', lineHeight: 1.5, marginBottom: '16px' }}>Controlla anche lo spam. Il link vale un’ora.</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.55, marginBottom: '16px' }}>{resetMsg.text}</p>
+                <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem', lineHeight: 1.5, marginBottom: '16px' }}>Controlla anche lo spam. Il link vale un’ora.</p>
                 <button type="button" onClick={() => setShowReset(false)} style={btnStyle}>Ho capito</button>
               </>
             ) : (
@@ -300,13 +300,13 @@ export default function AuthPage() {
                 }}
                 style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
               >
-                <p style={{ color: '#6b5a3c', fontSize: '0.9rem', lineHeight: 1.55 }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.55 }}>
                   Scrivi l’email con cui ti sei registrato: ti mandiamo un link per scegliere una nuova password.
                 </p>
                 <input type="email" required placeholder="Email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} style={inputStyle} autoFocus />
-                {resetMsg && !resetMsg.ok && <p style={{ color: '#a23b22', fontSize: '0.85rem' }}>{resetMsg.text}</p>}
+                {resetMsg && !resetMsg.ok && <p style={{ color: 'var(--red)', fontSize: '0.85rem' }}>{resetMsg.text}</p>}
                 <button type="submit" disabled={resetLoading} style={btnStyle}>{resetLoading ? '⏳ Invio...' : 'Mandami il link'}</button>
-                <button type="button" onClick={() => setShowReset(false)} style={{ background: 'none', border: 'none', color: '#8a7f6c', cursor: 'pointer', fontSize: '0.85rem' }}>Annulla</button>
+                <button type="button" onClick={() => setShowReset(false)} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '0.85rem' }}>Annulla</button>
               </form>
             )}
           </div>
