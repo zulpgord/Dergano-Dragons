@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import AccountModal from '../components/AccountModal';
 import ThemeToggle from '../components/ThemeToggle';
+import PrivacyGate from '../components/PrivacyGate';
 import { useNavigate } from 'react-router-dom';
 import { shiftsAPI, assignmentsAPI, authAPI } from '../services/api';
 
@@ -496,6 +497,7 @@ export default function DashboardPage() {
         </div>
       </header>
       {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
+      <PrivacyGate onLogout={handleLogout} />
 
       <main style={{ maxWidth: '1288px', margin: '0 auto', padding: '24px 24px 48px' }}>
 

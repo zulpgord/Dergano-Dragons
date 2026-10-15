@@ -18,8 +18,11 @@ export default function PrivacyPage() {
 
   return (
     <div style={{ minHeight: '100vh', padding: '32px 20px', background: 'var(--bg-page)' }}>
+      <div style={{ maxWidth: '760px', margin: '0 auto 12px' }}>
+        <a href="/" style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '0.9rem' }}>← Torna al sito</a>
+      </div>
       <div style={{
-        maxWidth: '680px', margin: '0 auto', background: 'var(--bg-card)',
+        maxWidth: '760px', margin: '0 auto', background: 'var(--bg-card)',
         border: '1px solid var(--border)', borderRadius: '12px', padding: '2rem',
         boxShadow: '0 8px 28px rgba(38,32,25,0.12)',
       }}>
@@ -37,7 +40,21 @@ export default function PrivacyPage() {
         ) : error ? (
           <p style={{ ...pStyle, color: 'var(--red)' }}>{error}</p>
         ) : (
-          content.split('\n\n').map((para, i) => <p key={i} style={pStyle}>{para}</p>)
+          content.split('\n\n').map((para, i) => {
+            // "3. Titolo\ntesto…" -> titoletto + testo; le righe che iniziano con "- " diventano un elenco
+            const [first, ...rest] = para.split('\n');
+            const isHead = /^\d+\.\s/.test(first) && rest.length > 0;
+            const body = isHead ? rest : [first, ...rest];
+            const bullets = body.filter(l => l.startsWith('- '));
+            const lines = body.filter(l => !l.startsWith('- '));
+            return (
+              <section key={i} style={{ marginBottom: '18px' }}>
+                {isHead && <h2 style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', fontSize: '1.02rem', margin: '22px 0 8px', letterSpacing: '0.5px' }}>{first}</h2>}
+                {lines.map((l, j) => <p key={j} style={{ ...pStyle, margin: '0 0 8px' }}>{l}</p>)}
+                {bullets.length > 0 && <ul style={{ margin: '0 0 8px', paddingLeft: '20px', color: 'var(--text)', lineHeight: 1.7 }}>{bullets.map((l, j) => <li key={j}>{l.slice(2)}</li>)}</ul>}
+              </section>
+            );
+          })
         )}
       </div>
     </div>

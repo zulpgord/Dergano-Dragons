@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { pool } = require('../db/database');
+const { pool, getPrivacyVersion } = require('../db/database');
 const { sendResetEmail, consumeResetToken } = require('../utils/passwordReset');
 require('dotenv').config();
 
@@ -20,8 +20,8 @@ const register = async (req, res) => {
     // Ci si registra sempre come eroe: admin si diventa solo se un altro admin lo promuove.
     const userRole = 'volunteer';
     const result = await pool.query(
-      'INSERT INTO users (email, password_hash, name, role, privacy_accepted_at, newsletter_opt_in) VALUES ($1, $2, $3, $4, NOW(), $5) RETURNING id, email, name, role',
-      [cleanEmail, hashedPassword, name.trim(), userRole, newsletter === true]
+      'INSERT INTO users (email, password_hash, name, role, privacy_accepted_at, newsletter_opt_in, privacy_version, last_login_at) VALUES ($1, $2, $3, $4, NOW(), $5, $6, NOW()) RETURNING id, email, name, role',
+      [cleanEmail, hashedPassword, name.trim(), userRole, newsletter === true, await getPrivacyVersion()]
     );
     const user = result.rows[0];
     const token = jwt.sign(
@@ -50,6 +50,7 @@ const login = async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) return res.status(401).json({ error: 'Invalid credentials' });
+    pool.query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]).catch(() => {});
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
@@ -184,9 +185,11 @@ const changePassword = async (req, res) => {
 // Preferenze del proprio account (per ora: newsletter).
 const getMe = async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT id, email, name, role, newsletter_opt_in FROM users WHERE id = $1', [req.user.id]);
+    const { rows } = await pool.query('SELECT id, email, name, role, newsletter_opt_in, privacy_version FROM users WHERE id = $1', [req.user.id]);
     if (!rows[0]) return res.status(404).json({ error: 'User not found' });
-    res.json(rows[0]);
+    // Chi rientra con un accesso salvato conta comunque come attivo (vale per la cancellazione dopo 24 mesi).
+    pool.query('UPDATE users SET last_login_at = NOW() WHERE id = $1 AND (last_login_at IS NULL OR last_login_at < NOW() - INTERVAL \'1 day\')', [req.user.id]).catch(() => {});
+    res.json({ ...rows[0], privacy_current: await getPrivacyVersion() });
   } catch (err) {
     console.error('Get me error:', err);
     res.status(500).json({ error: 'Errore nel caricamento del profilo' });
@@ -227,4 +230,16 @@ const newsletterLink = (purpose, value, okMsg) => async (req, res) => {
 const unsubscribe = newsletterLink('unsubscribe', false, 'Fatto: non riceverai più la newsletter. Continuerai a ricevere solo le email sulle sessioni a cui sei iscritto.');
 const subscribe = newsletterLink('subscribe', true, 'Grazie! 🎲 Da ora riceverai la newsletter con le nuove sessioni e le novità. Puoi disiscriverti quando vuoi dal link in fondo a ogni email.');
 
-module.exports = { register, login, getUsers, updateUserRole, deleteMyAccount, forgotPassword, resetPassword, changePassword, getMe, setNewsletter, unsubscribe, subscribe };
+// Accettazione della nuova versione dell'informativa (chi era gia' iscritto, al primo accesso dopo l'aggiornamento).
+const acceptPrivacy = async (req, res) => {
+  try {
+    const v = await getPrivacyVersion();
+    await pool.query('UPDATE users SET privacy_version = $1, privacy_accepted_at = NOW() WHERE id = $2', [v, req.user.id]);
+    res.json({ privacy_version: v });
+  } catch (err) {
+    console.error('Accept privacy error:', err);
+    res.status(500).json({ error: 'Salvataggio non riuscito' });
+  }
+};
+
+module.exports = { acceptPrivacy, register, login, getUsers, updateUserRole, deleteMyAccount, forgotPassword, resetPassword, changePassword, getMe, setNewsletter, unsubscribe, subscribe };

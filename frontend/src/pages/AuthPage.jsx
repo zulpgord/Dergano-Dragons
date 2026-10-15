@@ -31,10 +31,15 @@ function DerganoLogo() {
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
+  // Link d'invito: /auth?invito=1&email=... apre direttamente la registrazione con l'email compilata.
+  const [invite] = useState(() => {
+    const q = new URLSearchParams(window.location.search);
+    return q.get('invito') ? (q.get('email') || '') : null;
+  });
+  const [isLogin, setIsLogin] = useState(() => invite === null);
   const [showReset, setShowReset] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '', name: '' });
+  const [formData, setFormData] = useState(() => ({ email: new URLSearchParams(window.location.search).get('email') || '', password: '', name: '' }));
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [newsletter, setNewsletter] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
@@ -140,6 +145,11 @@ export default function AuthPage() {
           {isLogin ? '⚔️ Entra nella Gilda' : '📜 Registra il tuo Eroe'}
         </h2>
 
+        {invite !== null && !isLogin && !error && (
+          <div style={{ background: 'rgba(43,102,99,0.10)', border: '1px solid rgba(43,102,99,0.35)', color: 'var(--green)', padding: '10px 14px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.88rem', lineHeight: 1.45 }}>
+            🎲 Sei stato invitato! Scegli un nome da giocatore e una password per entrare nella gilda.
+          </div>
+        )}
         {sessionExpired && !error && (
           <div style={{
             background: 'rgba(169,121,26,0.12)',
@@ -210,6 +220,19 @@ export default function AuthPage() {
               {showPwd ? '🙈' : '👁'}
             </button>
           </div>
+          {!isLogin && (
+            <div className="privacy-summary">
+              <p className="privacy-summary-title">🛡️ In breve, i tuoi dati</p>
+              <ul>
+                <li>Usiamo <b>nome ed email</b> solo per l’account, le iscrizioni e le email sulle sessioni.</li>
+                <li>Gli altri iscritti vedono <b>solo il tuo nome</b>; l’email no.</li>
+                <li>La <b>newsletter</b> è facoltativa e la togli quando vuoi.</li>
+                <li>Niente pubblicità, profilazione o vendita dei dati. Account inattivi cancellati dopo 24 mesi.</li>
+                <li>Puoi <b>cancellare l’account</b> da solo in ogni momento.</li>
+              </ul>
+              <a href="/privacy" target="_blank" rel="noopener noreferrer">Leggi l’informativa completa →</a>
+            </div>
+          )}
           {!isLogin && (
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.82rem', color: 'var(--text-muted)', cursor: 'pointer', lineHeight: 1.4 }}>
               <input

@@ -50,6 +50,7 @@ const startServer = () => {
     try {
       await initializeDatabase();
       console.log('Database initialized');
+      require('./src/utils/retention').scheduleRetention();
     } catch (err) {
       console.error('Database init error:', err);
     }

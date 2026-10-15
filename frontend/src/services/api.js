@@ -66,6 +66,8 @@ export const authAPI = {
     api.put('/auth/me/password', { current_password: currentPassword, new_password: newPassword }),
   getMe: () =>
     api.get('/auth/me'),
+  acceptPrivacy: () =>
+    api.post('/auth/me/privacy'),
   setNewsletter: (newsletter) =>
     api.put('/auth/me/newsletter', { newsletter }),
   login: (email, password) =>
@@ -134,6 +136,12 @@ export const adminAPI = {
     api.get('/admin/newsletter'),
   sendNewsletter: (subject, message, test = false, groupIds = []) =>
     api.post('/admin/newsletter', { subject, message, test, group_ids: groupIds }),
+  getInvites: () =>
+    api.get('/admin/invites'),
+  sendInvites: (emails, message = '') =>
+    api.post('/admin/invites', { emails, message }),
+  deleteInvite: (id) =>
+    api.delete(`/admin/invites/${id}`),
   sendNewsletterInvite: (test = false) =>
     api.post('/admin/newsletter/invite', { test }),
 };
@@ -156,8 +164,8 @@ export const groupsAPI = {
 export const contentAPI = {
   get: (key) =>
     api.get(`/content/${key}`),
-  update: (key, content) =>
-    api.put(`/content/${key}`, { content }),
+  update: (key, content, requireReaccept = false) =>
+    api.put(`/content/${key}`, { content, require_reaccept: requireReaccept }),
 };
 
 // Schede personaggio (pagina /personaggi)

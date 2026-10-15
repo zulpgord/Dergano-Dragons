@@ -16,7 +16,7 @@ const getContent = async (req, res) => {
 // Modifica riservata all'admin
 const updateContent = async (req, res) => {
   const { key } = req.params;
-  const { content } = req.body;
+  const { content, require_reaccept } = req.body;
   if (typeof content !== 'string') return res.status(400).json({ error: 'content richiesto' });
   try {
     const result = await pool.query(
@@ -25,6 +25,10 @@ const updateContent = async (req, res) => {
        RETURNING key, content, updated_at`,
       [key, content]
     );
+    // Per l'informativa l'admin puo' chiedere a tutti di riaccettarla (modifica sostanziale).
+    if (key === 'privacy_policy' && require_reaccept === true) {
+      await pool.query(`UPDATE site_content SET content = (content::int + 1)::text WHERE key = 'privacy_version'`);
+    }
     res.json({ message: 'Contenuto aggiornato', ...result.rows[0] });
   } catch (err) {
     console.error('Update content error:', err);

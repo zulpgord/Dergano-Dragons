@@ -269,4 +269,69 @@ const sendNewsletterInvite = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, updateUserRole, updateUserName, resetUserPassword, getStats, getShiftStats, fixFutureShifts, sendUserResetLink, sendNewsletter, getNewsletterStats, sendNewsletterInvite };
+// Inviti: email con il link per iscriversi al sito. Non si invita chi e' gia' iscritto.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const sendInvites = async (req, res) => {
+  const raw = Array.isArray(req.body.emails) ? req.body.emails : String(req.body.emails || '').split(/[\s,;]+/);
+  const emails = [...new Set(raw.map(e => String(e).trim().toLowerCase()).filter(Boolean))];
+  const note = String(req.body.message || '').trim().slice(0, 1000);
+  if (emails.length === 0) return res.status(400).json({ error: 'Inserisci almeno un indirizzo email' });
+  if (emails.length > 30) return res.status(400).json({ error: 'Massimo 30 inviti alla volta' });
+  const invalid = emails.filter(e => !EMAIL_RE.test(e));
+  if (invalid.length) return res.status(400).json({ error: `Indirizzi non validi: ${invalid.join(', ')}` });
+  try {
+    const { rows: [me] } = await pool.query('SELECT name FROM users WHERE id = $1', [req.user.id]);
+    const { rows: existing } = await pool.query('SELECT lower(email) AS email FROM users WHERE lower(email) = ANY($1)', [emails]);
+    const already = new Set(existing.map(r => r.email));
+    const results = [];
+    for (const email of emails) {
+      if (already.has(email)) { results.push({ email, status: 'iscritto' }); continue; }
+      await pool.query(
+        `INSERT INTO invites (email, invited_by) VALUES ($1, $2)
+         ON CONFLICT (email) DO UPDATE SET sends = invites.sends + 1, last_sent_at = NOW(), invited_by = $2`,
+        [email, req.user.id]);
+      const link = `${FRONTEND_URL}/auth?invito=1&email=${encodeURIComponent(email)}`;
+      const { html, text } = renderMail({
+        greeting: 'Ciao!',
+        body: `${me?.name || 'Un organizzatore'} ti invita a unirti a Dergano & Dragons, le sessioni di gioco di ruolo per ragazzi alla libreria Scamamu.${note ? `\n\n«${note}»` : ''}\n\nSul sito trovi il calendario delle sessioni e puoi iscriverti con un tocco. Per creare il tuo account bastano un nome, la tua email e una password.`,
+        button: { label: 'Crea il tuo account', url: link },
+        footer: 'Hai ricevuto questa email perché un organizzatore ha indicato il tuo indirizzo. Se non ti interessa, ignorala: non riceverai altri messaggi e l’indirizzo verrà cancellato entro 6 mesi.',
+      });
+      const ok = await sendEmail(email, 'Sei invitato a Dergano & Dragons 🐉', text, html);
+      results.push({ email, status: ok ? 'inviato' : 'errore' });
+    }
+    res.json({ results, sent: results.filter(r => r.status === 'inviato').length });
+  } catch (err) {
+    console.error('Send invites error:', err);
+    res.status(500).json({ error: 'Invio non riuscito' });
+  }
+};
+
+const getInvites = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT i.id, i.email, i.sends, i.created_at, i.last_sent_at, u.name AS invited_by_name,
+              r.name AS registered_name, r.created_at AS registered_at
+       FROM invites i
+       LEFT JOIN users u ON u.id = i.invited_by
+       LEFT JOIN users r ON lower(r.email) = i.email
+       ORDER BY (r.id IS NULL) DESC, i.last_sent_at DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Get invites error:', err);
+    res.status(500).json({ error: 'Errore nel caricamento degli inviti' });
+  }
+};
+
+const deleteInvite = async (req, res) => {
+  try {
+    await pool.query('DELETE FROM invites WHERE id = $1', [req.params.id]);
+    res.json({ message: 'Invito eliminato' });
+  } catch (err) {
+    console.error('Delete invite error:', err);
+    res.status(500).json({ error: 'Errore' });
+  }
+};
+
+module.exports = { sendInvites, getInvites, deleteInvite, getUsers, updateUserRole, updateUserName, resetUserPassword, getStats, getShiftStats, fixFutureShifts, sendUserResetLink, sendNewsletter, getNewsletterStats, sendNewsletterInvite };

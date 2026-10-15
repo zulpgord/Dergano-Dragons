@@ -294,6 +294,31 @@ function NewsletterSection() {
   const load = () => adminAPI.getNewsletterStats().then(r => setStats(r.data)).catch(() => {});
   useEffect(() => { load(); }, []);
 
+  // Inviti a iscriversi al sito
+  const [invEmails, setInvEmails] = useState('');
+  const [invNote, setInvNote] = useState('');
+  const [invites, setInvites] = useState([]);
+  const [invResult, setInvResult] = useState(null);
+  const loadInvites = () => adminAPI.getInvites().then(r => setInvites(r.data)).catch(() => {});
+  useEffect(() => { loadInvites(); }, []);
+  const sendInv = async (emails) => {
+    setSending(true);
+    setInvResult(null);
+    try {
+      const r = await adminAPI.sendInvites(emails, invNote);
+      const by = (st) => r.data.results.filter(x => x.status === st).map(x => x.email);
+      const parts = [];
+      if (by('inviato').length) parts.push(`✓ Invito inviato a ${by('inviato').join(', ')}`);
+      if (by('iscritto').length) parts.push(`già iscritti: ${by('iscritto').join(', ')}`);
+      if (by('errore').length) parts.push(`non riusciti: ${by('errore').join(', ')}`);
+      setInvResult({ ok: !by('errore').length, text: parts.join(' · ') });
+      setInvEmails('');
+      loadInvites(); load();
+    } catch (err) {
+      setInvResult({ ok: false, text: err.response?.data?.error || 'Invio non riuscito' });
+    } finally { setSending(false); }
+  };
+
   const groups = stats?.groups || [];
   const selected = groups.filter(g => groupIds.includes(g.id));
   // Stima: chi sta in piu' tavoli selezionati riceve comunque una sola email (il server deduplica).
@@ -346,6 +371,44 @@ function NewsletterSection() {
   return (
     <div className="nl-layout">
     <div className="nl-main">
+      {/* Invita nuove persone a iscriversi al sito */}
+      <div className="bg-frame" style={card}>
+        <h2 className="bg-cartouche" style={h2}>🎟️ Invita al sito</h2>
+        <p style={p}>Scrivi uno o più indirizzi email (separati da virgola o a capo): ricevono un invito con il link per creare l’account, con l’email già compilata.</p>
+        <textarea placeholder="es. mario@email.it, giulia@email.it" rows={3} value={invEmails} onChange={e => setInvEmails(e.target.value)} style={{ ...field, marginBottom: '8px' }} />
+        <input placeholder="Messaggio personale (facoltativo)" value={invNote} onChange={e => setInvNote(e.target.value)} style={{ ...field, marginBottom: '10px' }} />
+        {invResult && <p style={{ fontSize: '0.85rem', margin: '0 0 10px', color: invResult.ok ? 'var(--green)' : 'var(--red)' }}>{invResult.text}</p>}
+        <button type="button" disabled={sending || !invEmails.trim()} onClick={() => sendInv(invEmails)} style={{ ...gold, width: '100%' }}>
+          {sending ? 'Invio…' : 'Invia invito'}
+        </button>
+        {invites.length > 0 && (
+          <div style={{ marginTop: '16px' }}>
+            <p style={{ ...p, margin: '0 0 6px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.72rem' }}>
+              Inviti inviati · {invites.filter(i => i.registered_name).length} su {invites.length} si sono iscritti
+            </p>
+            <div className="nl-list" style={{ maxHeight: '280px' }}>
+              {invites.map(i => (
+                <div key={i.id} className={`nl-row ${i.registered_name ? 'nl-row-on' : ''}`}>
+                  <span className={`nl-dot ${i.registered_name ? 'nl-dot-yes' : 'nl-dot-no'}`} aria-hidden>{i.registered_name ? '✓' : '…'}</span>
+                  <span style={{ minWidth: 0, flex: 1 }}>
+                    <span className="nl-name">{i.email}</span>
+                    <span className="nl-email">
+                      {i.registered_name ? `Iscritto come ${i.registered_name}` : `Invitato il ${new Date(i.last_sent_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}${i.sends > 1 ? ` · ${i.sends} invii` : ''}`}
+                    </span>
+                  </span>
+                  {!i.registered_name && (
+                    <>
+                      <button type="button" disabled={sending} onClick={() => sendInv(i.email)} style={{ ...chip(false), padding: '4px 10px', fontSize: '0.75rem' }} title="Rimanda l'invito">↻ Rimanda</button>
+                      <button type="button" onClick={async () => { if (confirm(`Eliminare l’invito a ${i.email}?`)) { await adminAPI.deleteInvite(i.id); loadInvites(); } }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)' }} aria-label="Elimina invito" title="Elimina">✕</button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Invito al consenso, per chi era gia' iscritto prima della newsletter */}
       {notSubscribed > 0 && (
         <div className="bg-frame" style={{ ...card, borderColor: 'rgba(169,121,26,0.45)' }}>
@@ -1721,6 +1784,7 @@ function GroupsSection() {
 // Sezione: Privacy — modifica l'informativa senza dover ripubblicare il codice
 // ═══════════════════════════════════════════════════════════════════════════════
 function PrivacyEditorSection() {
+  const [reaccept, setReaccept] = useState(false);
   const [text, setText] = useState('');
   const [updatedAt, setUpdatedAt] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1738,7 +1802,8 @@ function PrivacyEditorSection() {
     setSaving(true);
     setSaved(false);
     try {
-      const res = await contentAPI.update('privacy_policy', text);
+      const res = await contentAPI.update('privacy_policy', text, reaccept);
+      setReaccept(false);
       setUpdatedAt(res.data.updated_at);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
@@ -1778,6 +1843,10 @@ function PrivacyEditorSection() {
           <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)', margin: '6px 0 14px' }}>
             Suggerimento: lascia una riga vuota tra un paragrafo e l'altro — è così che la pagina pubblica li separa visivamente.
           </p>
+          <label style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 12px', cursor: 'pointer' }}>
+            <input type="checkbox" checked={reaccept} onChange={e => setReaccept(e.target.checked)} />
+            <span>È una modifica importante: chiedi a tutti gli iscritti di <b>riaccettarla</b> al prossimo accesso. (Non serve per correzioni di battitura.)</span>
+          </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button onClick={handleSave} disabled={saving} style={{ ...btnGold, opacity: saving ? 0.6 : 1 }}>
               {saving ? 'Salvataggio...' : '💾 Salva modifiche'}

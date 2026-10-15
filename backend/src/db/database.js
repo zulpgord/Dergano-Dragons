@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const { PRIVACY_POLICY, PRIVACY_VERSION } = require('./privacyPolicy');
 require('dotenv').config();
 
 const pool = new Pool({
@@ -188,6 +189,31 @@ async function initializeDatabase() {
       ['privacy_policy', DEFAULT_PRIVACY_POLICY]
     );
 
+    // Migration: informativa versionata, ultimo accesso (per la conservazione) e inviti via email.
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS privacy_version INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP DEFAULT NULL;
+      CREATE TABLE IF NOT EXISTS invites (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        invited_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        sends INTEGER NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    // Nuova informativa: sostituisce il testo solo se e' ancora quello vecchio con i segnaposto
+    // (se l'admin l'ha gia' personalizzata, non la tocchiamo) e fissa la versione corrente.
+    const cur = await client.query("SELECT content FROM site_content WHERE key = 'privacy_policy'");
+    if (!cur.rows[0] || cur.rows[0].content.includes('[inserire')) {
+      await client.query(
+        `INSERT INTO site_content (key, content, updated_at) VALUES ('privacy_policy', $1, NOW())
+         ON CONFLICT (key) DO UPDATE SET content = $1, updated_at = NOW()`, [PRIVACY_POLICY]);
+    }
+    await client.query(
+      `INSERT INTO site_content (key, content) VALUES ('privacy_version', $1)
+       ON CONFLICT (key) DO UPDATE SET content = GREATEST(site_content.content::int, $1::int)::text`, [String(PRIVACY_VERSION)]);
+
     console.log('✅ Database initialized');
   } catch (err) {
     console.error('Error initializing database:', err);
@@ -196,4 +222,9 @@ async function initializeDatabase() {
   }
 }
 
-module.exports = { pool, initializeDatabase };
+const getPrivacyVersion = async () => {
+  const r = await pool.query("SELECT content FROM site_content WHERE key = 'privacy_version'");
+  return parseInt(r.rows[0]?.content || '0', 10);
+};
+
+module.exports = { getPrivacyVersion, pool, initializeDatabase };
