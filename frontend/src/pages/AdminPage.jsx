@@ -279,6 +279,65 @@ function ShiftEmailBox({ sessionId, assigned, waiting }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Sezione: Notifiche per gli admin (nuovi iscritti, iscrizioni, defezioni, ...)
+// ═══════════════════════════════════════════════════════════════════════════════
+const EVENT_META = {
+  registrazione: ['🆕', 'Nuovi iscritti al sito'], iscrizione: ['⚔️', 'Iscrizioni'], attesa: ['⏳', "Liste d'attesa"],
+  defezione: ['🚪', 'Defezioni'], promozione: ['🎉', 'Promozioni'], account_eliminato: ['🗑️', 'Account eliminati'],
+  newsletter: ['📜', 'Newsletter'], contatto: ['✉️', 'Messaggi'],
+};
+function EventsSection({ onSeen }) {
+  const [data, setData] = useState(null);
+  const [filter, setFilter] = useState('tutti');
+  useEffect(() => {
+    adminAPI.getEvents().then(r => { setData(r.data); adminAPI.markEventsSeen().then(onSeen).catch(() => {}); }).catch(() => setData({ events: [], unread: 0, email_notify: true }));
+  }, [onSeen]);
+  const toggleEmail = async (v) => {
+    setData(d => ({ ...d, email_notify: v }));
+    try { await adminAPI.setEventsEmail(v); } catch { setData(d => ({ ...d, email_notify: !v })); }
+  };
+  if (!data) return <p style={{ color: 'var(--text-muted)' }}>Caricamento…</p>;
+  const types = [...new Set(data.events.map(e => e.type))];
+  const shown = data.events.filter(e => filter === 'tutti' || e.type === filter);
+  // Raggruppa per giorno
+  const days = [];
+  for (const e of shown) {
+    const d = new Date(e.created_at).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+    if (!days.length || days[days.length - 1][0] !== d) days.push([d, []]);
+    days[days.length - 1][1].push(e);
+  }
+  const chip = (on) => ({ padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem', cursor: 'pointer', border: `1px solid ${on ? 'var(--gold)' : 'var(--border)'}`, background: on ? 'rgba(169,121,26,0.14)' : 'var(--bg-surface)', color: on ? 'var(--gold-deep)' : 'var(--text-muted)', fontWeight: on ? 700 : 400, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' });
+  return (
+    <div className="bg-frame" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px' }}>
+      <h2 className="bg-cartouche" style={{ fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 6px', fontSize: '1.05rem' }}>🔔 Notifiche</h2>
+      <label style={{ display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'center', fontSize: '0.88rem', color: 'var(--text)', margin: '4px 0 14px', cursor: 'pointer', flexWrap: 'wrap', textAlign: 'center' }}>
+        <input type="checkbox" checked={data.email_notify} onChange={e => toggleEmail(e.target.checked)} />
+        <span>Ricevi anche un’email per ogni novità <span style={{ color: 'var(--text-dim)' }}>(impostazione personale)</span></span>
+      </label>
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '16px' }}>
+        <button type="button" onClick={() => setFilter('tutti')} style={chip(filter === 'tutti')}>Tutte</button>
+        {types.map(t => <button key={t} type="button" onClick={() => setFilter(t)} style={chip(filter === t)}>{(EVENT_META[t] || ['🔔', t])[0]} {(EVENT_META[t] || ['', t])[1]}</button>)}
+      </div>
+      {shown.length === 0 && <p style={{ color: 'var(--text-dim)', textAlign: 'center', padding: '24px' }}>Nessuna notifica ancora. Qui compariranno nuovi iscritti, iscrizioni, defezioni e messaggi.</p>}
+      {days.map(([d, list]) => (
+        <div key={d} style={{ marginBottom: '14px' }}>
+          <p style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--text-dim)', fontWeight: 700, margin: '0 0 6px' }}>{d}</p>
+          <div className="nl-list" style={{ maxHeight: 'none' }}>
+            {list.map(e => (
+              <div key={e.id} className={`nl-row ${e.unread ? 'ev-unread' : ''}`}>
+                <span className="ev-icon" aria-hidden>{(EVENT_META[e.type] || ['🔔'])[0]}</span>
+                <span style={{ flex: 1, minWidth: 0, fontSize: '0.88rem', color: 'var(--text)', lineHeight: 1.4 }}>{e.message}</span>
+                <span style={{ flex: 'none', fontSize: '0.75rem', color: 'var(--text-dim)' }}>{new Date(e.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Sezione: Newsletter (solo a chi ha dato il consenso)
 // ═══════════════════════════════════════════════════════════════════════════════
 function NewsletterSection() {
@@ -1868,7 +1927,15 @@ function PrivacyEditorSection() {
 export default function AdminPage() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const [tab, setTab] = useState('sessioni');
+  const [tab, setTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'sessioni');
+  const [unread, setUnread] = useState(0);
+  const clearUnread = useCallback(() => setUnread(0), []);
+  useEffect(() => {
+    const poll = () => adminAPI.getEvents().then(r => setUnread(r.data.unread)).catch(() => {});
+    poll();
+    const t = setInterval(poll, 60000);
+    return () => clearInterval(t);
+  }, []);
   const [locations, setLocations] = useState([]);
 
   useEffect(() => {
@@ -1894,6 +1961,7 @@ export default function AdminPage() {
     { id: 'statistiche', label: '📊 Statistiche' },
     { id: 'locations', label: '📍 Locations' },
     { id: 'gruppi', label: '👥 Gruppi' },
+    { id: 'notifiche', label: '🔔 Notifiche' },
     { id: 'newsletter', label: '📜 Newsletter' },
     { id: 'privacy', label: '📄 Privacy' },
     { id: 'schede', label: '🎭 Schede' },
@@ -1916,7 +1984,7 @@ export default function AdminPage() {
               background: 'none', border: 'none', borderBottom: `2px solid ${tab === t.id ? 'var(--gold)' : 'transparent'}`,
               color: tab === t.id ? 'var(--gold)' : 'var(--text-muted)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s',
             }}>
-              {t.label}
+              {t.label}{t.id === 'notifiche' && unread > 0 && <span className="ev-badge">{unread > 99 ? '99+' : unread}</span>}
             </button>
           ))}
         </div>
@@ -1929,6 +1997,7 @@ export default function AdminPage() {
         {tab === 'locations' && <LocationsSection />}
         {tab === 'gruppi' && <GroupsSection />}
         {tab === 'newsletter' && <NewsletterSection />}
+        {tab === 'notifiche' && <EventsSection onSeen={clearUnread} />}
         {tab === 'privacy' && <PrivacyEditorSection />}
         {tab === 'schede' && <SchedeAdminTab />}
       </main>

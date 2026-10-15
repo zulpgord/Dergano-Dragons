@@ -202,6 +202,19 @@ async function initializeDatabase() {
         last_sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    // Migration: registro eventi per gli admin e preferenza email.
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS admin_events (
+        id SERIAL PRIMARY KEY,
+        type VARCHAR(40) NOT NULL,
+        message TEXT NOT NULL,
+        actor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_admin_events_created ON admin_events(created_at DESC);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_email_notify BOOLEAN NOT NULL DEFAULT TRUE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_seen_events_at TIMESTAMP DEFAULT NOW();
+    `);
     // Nuova informativa: sostituisce il testo solo se e' ancora quello vecchio con i segnaposto
     // (se l'admin l'ha gia' personalizzata, non la tocchiamo) e fissa la versione corrente.
     const cur = await client.query("SELECT content FROM site_content WHERE key = 'privacy_policy'");

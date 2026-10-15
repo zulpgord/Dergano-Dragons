@@ -136,6 +136,12 @@ export const adminAPI = {
     api.get('/admin/newsletter'),
   sendNewsletter: (subject, message, test = false, groupIds = []) =>
     api.post('/admin/newsletter', { subject, message, test, group_ids: groupIds }),
+  getEvents: () =>
+    api.get('/admin/events'),
+  markEventsSeen: () =>
+    api.post('/admin/events/seen'),
+  setEventsEmail: (enabled) =>
+    api.put('/admin/events/email', { enabled }),
   getInvites: () =>
     api.get('/admin/invites'),
   sendInvites: (emails, message = '') =>
@@ -182,6 +188,12 @@ export const sheetsAPI = {
     api.put(`/sheets/${id}/users`, { user_ids: userIds }),
   bulkVisibility: (ids, visibleToAll) =>
     api.post('/sheets/bulk-visibility', { ids, visible_to_all: visibleToAll }),
+};
+
+// Modulo Contatti (anche senza login)
+export const contactAPI = {
+  info: () => api.get('/contact'),
+  send: (data) => api.post('/contact', data),
 };
 
 export default api;

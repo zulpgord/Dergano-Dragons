@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { pool, getPrivacyVersion } = require('../db/database');
 const { sendResetEmail, consumeResetToken } = require('../utils/passwordReset');
+const { logEvent } = require('../utils/adminEvents');
 require('dotenv').config();
 
 const register = async (req, res) => {
@@ -29,6 +30,7 @@ const register = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
+    logEvent('registrazione', `Nuovo iscritto al sito: ${user.name} (${user.email})${newsletter === true ? ' · ha accettato la newsletter' : ''}`, user.id);
     res.status(201).json({ message: 'User registered successfully', token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
   } catch (err) {
     if (err.code === '23505') {
@@ -103,7 +105,9 @@ const updateUserRole = async (req, res) => {
 // Elimina l'utente e, in cascata, le sue iscrizioni e appartenenze ai gruppi.
 const deleteMyAccount = async (req, res) => {
   try {
+    const who = (await pool.query('SELECT name, email FROM users WHERE id = $1', [req.user.id])).rows[0];
     const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [req.user.id]);
+    if (who) logEvent('account_eliminato', `${who.name} (${who.email}) ha eliminato il proprio account`);
     if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     res.json({ message: 'Account eliminato' });
   } catch (err) {
@@ -199,6 +203,8 @@ const getMe = async (req, res) => {
 const setNewsletter = async (req, res) => {
   try {
     await pool.query('UPDATE users SET newsletter_opt_in = $1 WHERE id = $2', [req.body.newsletter === true, req.user.id]);
+    const nm = (await pool.query('SELECT name FROM users WHERE id = $1', [req.user.id])).rows[0]?.name;
+    logEvent('newsletter', `${nm} ha ${req.body.newsletter === true ? 'attivato' : 'disattivato'} la newsletter`, req.user.id);
     res.json({ newsletter_opt_in: req.body.newsletter === true });
   } catch (err) {
     console.error('Set newsletter error:', err);
@@ -220,6 +226,8 @@ const newsletterLink = (purpose, value, okMsg) => async (req, res) => {
   try {
     const r = await pool.query('UPDATE users SET newsletter_opt_in = $1 WHERE id = $2', [value, uid]);
     if (r.rowCount === 0) return res.status(404).send(page('Account non trovato.'));
+    const nm = (await pool.query('SELECT name FROM users WHERE id = $1', [uid])).rows[0]?.name;
+    logEvent('newsletter', `${nm} ha ${value ? 'accettato' : 'disattivato'} la newsletter dal link nell’email`, uid);
     res.send(page(okMsg));
   } catch (err) {
     console.error('Unsubscribe error:', err);

@@ -334,4 +334,41 @@ const deleteInvite = async (req, res) => {
   }
 };
 
-module.exports = { sendInvites, getInvites, deleteInvite, getUsers, updateUserRole, updateUserName, resetUserPassword, getStats, getShiftStats, fixFutureShifts, sendUserResetLink, sendNewsletter, getNewsletterStats, sendNewsletterInvite };
+// Notifiche per gli admin: ultimi eventi, quante non lette, preferenza email.
+const getAdminEvents = async (req, res) => {
+  try {
+    const [{ rows: events }, { rows: [me] }] = await Promise.all([
+      pool.query('SELECT id, type, message, created_at FROM admin_events ORDER BY created_at DESC LIMIT 200'),
+      pool.query('SELECT admin_email_notify, admin_seen_events_at FROM users WHERE id = $1', [req.user.id]),
+    ]);
+    const seen = me?.admin_seen_events_at ? new Date(me.admin_seen_events_at) : new Date(0);
+    res.json({
+      events: events.map(e => ({ ...e, unread: new Date(e.created_at) > seen })),
+      unread: events.filter(e => new Date(e.created_at) > seen).length,
+      email_notify: me?.admin_email_notify ?? true,
+    });
+  } catch (err) {
+    console.error('Get admin events error:', err);
+    res.status(500).json({ error: 'Errore nel caricamento delle notifiche' });
+  }
+};
+
+const markAdminEventsSeen = async (req, res) => {
+  try {
+    await pool.query('UPDATE users SET admin_seen_events_at = NOW() WHERE id = $1', [req.user.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Errore' });
+  }
+};
+
+const setAdminEmailNotify = async (req, res) => {
+  try {
+    await pool.query('UPDATE users SET admin_email_notify = $1 WHERE id = $2', [req.body.enabled === true, req.user.id]);
+    res.json({ email_notify: req.body.enabled === true });
+  } catch (err) {
+    res.status(500).json({ error: 'Errore' });
+  }
+};
+
+module.exports = { getAdminEvents, markAdminEventsSeen, setAdminEmailNotify, sendInvites, getInvites, deleteInvite, getUsers, updateUserRole, updateUserName, resetUserPassword, getStats, getShiftStats, fixFutureShifts, sendUserResetLink, sendNewsletter, getNewsletterStats, sendNewsletterInvite };

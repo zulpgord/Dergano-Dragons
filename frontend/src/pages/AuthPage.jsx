@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
+import ContactModal from '../components/ContactModal';
 
 // ══════════════════════════════════════════════════════
 // Logo Auth: solo il drago (contiene già dado e titolo)
@@ -42,6 +43,7 @@ export default function AuthPage() {
   const [formData, setFormData] = useState(() => ({ email: new URLSearchParams(window.location.search).get('email') || '', password: '', name: '' }));
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [newsletter, setNewsletter] = useState(false);
+  const [showContact, setShowContact] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetMsg, setResetMsg] = useState(null);
   const [resetLoading, setResetLoading] = useState(false);
@@ -276,6 +278,10 @@ export default function AuthPage() {
             {isLogin ? 'Registrati' : 'Accedi'}
           </button>
 
+          <button type="button" onClick={() => setShowContact(true)}
+            style={{ display: 'block', width: '100%', marginTop: '10px', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '0.85rem', textDecoration: 'underline' }}>
+            ✉️ Contatti — scrivi all’organizzatore
+          </button>
           {isLogin && (
             <button
               type="button"
@@ -292,6 +298,7 @@ export default function AuthPage() {
         </div>
       </div>
 
+      {showContact && <ContactModal onClose={() => setShowContact(false)} />}
       {/* Modal reset password */}
       {showReset && (
         <div style={{

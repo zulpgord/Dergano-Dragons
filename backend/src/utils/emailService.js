@@ -11,7 +11,7 @@ const parseSender = (value = '') => {
   return match ? { name: match[1] || undefined, email: match[2] } : { email: value.trim() };
 };
 
-const sendEmail = async (to, subject, text, html = null) => {
+const sendEmail = async (to, subject, text, html = null, opts = {}) => {
   if (!process.env.BREVO_API_KEY || !process.env.EMAIL_FROM) {
     console.error(`Email non inviata a ${to}: BREVO_API_KEY o EMAIL_FROM mancante`);
     return null;
@@ -30,6 +30,7 @@ const sendEmail = async (to, subject, text, html = null) => {
         subject,
         textContent: text,
         htmlContent: html || text.replace(/\n/g, '<br>'),
+        ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
       }),
       signal: AbortSignal.timeout(15000),
     });

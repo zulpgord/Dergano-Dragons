@@ -11,6 +11,7 @@ const adminRoutes = require('./src/routes/adminRoutes');
 const groupRoutes = require('./src/routes/groupRoutes');
 const contentRoutes = require('./src/routes/contentRoutes');
 const sheetRoutes = require('./src/routes/sheetRoutes');
+const contactRoutes = require('./src/routes/contactRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,6 +28,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/sheets', sheetRoutes);
+app.use('/api/contact', contactRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });

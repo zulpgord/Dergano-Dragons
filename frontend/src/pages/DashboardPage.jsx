@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import AccountModal from '../components/AccountModal';
 import ThemeToggle from '../components/ThemeToggle';
 import PrivacyGate from '../components/PrivacyGate';
+import ContactModal from '../components/ContactModal';
 import { useNavigate } from 'react-router-dom';
 import { shiftsAPI, assignmentsAPI, authAPI } from '../services/api';
 
@@ -286,6 +287,7 @@ export default function DashboardPage() {
   });
   const [calendarRevealed, setCalendarRevealed] = useState(() => { try { return localStorage.getItem('dg_art_seen') === '1'; } catch { return true; } });
   const [showAccount, setShowAccount] = useState(false);
+  const [showContact, setShowContact] = useState(false);
 
   useEffect(() => {
     if (!user.id) { navigate('/auth'); return; }
@@ -477,6 +479,10 @@ export default function DashboardPage() {
             <span style={{ color: 'var(--text-muted)', fontSize: '0.88rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
               ⚔️ {user.name}
             </span>
+            <button onClick={() => setShowContact(true)} title="Scrivi all'organizzatore"
+              style={{ background: 'var(--bg-card)', color: 'var(--gold)', border: '1px solid var(--gold)', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif' }}>
+              ✉️ Contatti
+            </button>
             <ThemeToggle />
             <button
               onClick={handleLogout}
@@ -497,6 +503,7 @@ export default function DashboardPage() {
         </div>
       </header>
       {showAccount && <AccountModal onClose={() => setShowAccount(false)} />}
+      {showContact && <ContactModal onClose={() => setShowContact(false)} />}
       <PrivacyGate onLogout={handleLogout} />
 
       <main style={{ maxWidth: '1288px', margin: '0 auto', padding: '24px 24px 48px' }}>

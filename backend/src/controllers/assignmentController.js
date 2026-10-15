@@ -1,5 +1,6 @@
 const { pool } = require('../db/database');
 const { sendEmail } = require('../utils/emailService');
+const { logEvent, shiftLabel } = require('../utils/adminEvents');
 
 // Il server gira in UTC: senza fuso le email mostrerebbero l'orario sbagliato di 1-2 ore.
 const fmtRome = (d) => new Date(d).toLocaleString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
@@ -32,6 +33,7 @@ const promoteWaiting = async (shiftId, client = pool) => {
 
 const notifyPromoted = (promoted) => {
   for (const p of promoted) {
+    logEvent('promozione', `${p.name} è passato dalla lista d'attesa agli iscritti · ${p.shift.location_name} · ${new Date(p.shift.start_time).toLocaleString('it-IT', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}`);
     sendEmail(
       p.email,
       '🎉 Si è liberato un posto: sei dentro!',
@@ -100,6 +102,12 @@ const assignShift = async (req, res) => {
     const r = await registerInShift({ shiftId: shift_id, userId: req.user.id, seats: requestedSeats, hours: hours_volunteered, asAdmin: false, role: req.user.role });
     if (r.error) return res.status(r.error[0]).json({ error: r.error[1] });
     res.status(201).json({ message: r.status === 'waiting' ? 'Added to waiting list' : 'Assigned to shift', assignment: r.assignment });
+    shiftLabel(shift_id).then(async (sl) => {
+      const nm = (await pool.query('SELECT name FROM users WHERE id = $1', [req.user.id])).rows[0]?.name;
+      const seats = requestedSeats > 1 ? ` (${requestedSeats} posti)` : '';
+      logEvent(r.status === 'waiting' ? 'attesa' : 'iscrizione',
+        r.status === 'waiting' ? `${nm} è in lista d'attesa${seats} · ${sl.text}` : `${nm} si è iscritto${seats} · ${sl.text} · ${sl.seats}`, req.user.id);
+    }).catch(() => {});
 
     // Email di conferma in background (non blocca la risposta)
     const [{ rows: [shift] }, { rows: [user] }] = await Promise.all([
@@ -170,7 +178,14 @@ const cancelAssignment = async (req, res) => {
       ['cancelled', id]
     );
 
+    const byAdmin = assignment.user_id !== user_id;
+    const sl = await shiftLabel(assignment.shift_id).catch(() => ({ text: 'sessione', seats: '' }));
+    const nm = (await pool.query('SELECT name FROM users WHERE id = $1', [assignment.user_id])).rows[0]?.name;
     if (wasAssigned) notifyPromoted(await promoteWaiting(assignment.shift_id));
+    const after = await shiftLabel(assignment.shift_id).catch(() => sl);
+    logEvent('defezione', byAdmin
+      ? `${nm} è stato tolto da un admin ${wasAssigned ? 'dalla sessione' : "dalla lista d'attesa"} · ${sl.text} · ora ${after.seats}`
+      : `${nm} ${wasAssigned ? 'ha annullato la partecipazione' : "è uscito dalla lista d'attesa"} · ${sl.text} · ora ${after.seats}`, user_id);
 
     res.json({ message: 'Assignment cancelled', assignment: result.rows[0] });
   } catch (err) {
