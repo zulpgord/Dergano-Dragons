@@ -297,8 +297,14 @@ function NewsletterSection() {
   const groups = stats?.groups || [];
   const selected = groups.filter(g => groupIds.includes(g.id));
   // Stima: chi sta in piu' tavoli selezionati riceve comunque una sola email (il server deduplica).
-  const recipients = target === 'all' ? (stats?.subscribed ?? 0) : selected.reduce((a, g) => a + g.subscribed, 0);
+  const recipients = target === 'all' ? (stats?.subscribed ?? 0) : selected.reduce((a, g) => a + g.subscribed, 0); // sostituito sotto dal conteggio esatto
   const notSubscribed = stats ? stats.total - stats.subscribed : 0;
+  const [listFilter, setListFilter] = useState('target');
+  const users = stats?.users || [];
+  // Chi rientra nel pubblico scelto (tutti, o membri dei tavoli selezionati)
+  const inTarget = (u) => target === 'all' || u.group_ids.some(id => groupIds.includes(id));
+  const shown = users.filter(u => listFilter === 'all' ? true : listFilter === 'yes' ? u.newsletter_opt_in : listFilter === 'no' ? !u.newsletter_opt_in : inTarget(u));
+  const exactRecipients = users.filter(u => inTarget(u) && u.newsletter_opt_in).length;
 
   const send = async (test) => {
     if (!subject.trim() || !message.trim()) return setResult({ ok: false, text: 'Scrivi oggetto e messaggio' });
@@ -328,7 +334,7 @@ function NewsletterSection() {
     } finally { setSending(false); }
   };
 
-  const card = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', maxWidth: '640px', marginBottom: '22px' };
+  const card = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', marginBottom: '22px' };
   const h2 = { fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', margin: '0 0 6px', fontSize: '1.05rem' };
   const p = { fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 14px', lineHeight: 1.5 };
   const field = { width: '100%', padding: '9px 12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '7px', color: 'var(--text)', fontSize: '16px', boxSizing: 'border-box', fontFamily: 'inherit' };
@@ -338,7 +344,8 @@ function NewsletterSection() {
   const chip = (on) => ({ padding: '7px 14px', borderRadius: '20px', fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', border: `1px solid ${on ? 'var(--gold)' : 'var(--border)'}`, background: on ? 'rgba(169,121,26,0.14)' : 'var(--bg-surface)', color: on ? 'var(--gold-deep)' : 'var(--text-muted)', fontWeight: on ? 700 : 400 });
 
   return (
-    <div>
+    <div className="nl-layout">
+    <div className="nl-main">
       {/* Invito al consenso, per chi era gia' iscritto prima della newsletter */}
       {notSubscribed > 0 && (
         <div className="bg-frame" style={{ ...card, borderColor: 'rgba(169,121,26,0.45)' }}>
@@ -390,13 +397,47 @@ function NewsletterSection() {
           {result && <p style={{ fontSize: '0.85rem', margin: 0, color: result.ok ? 'var(--green)' : 'var(--red)' }}>{result.text}</p>}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button type="button" disabled={sending} onClick={() => send(true)} style={ghost}>Mandami una prova</button>
-            <button type="button" disabled={sending || !recipients} onClick={() => send(false)} style={gold}>
-              {sending ? 'Invio...' : target === 'all' ? `Invia a ${recipients} iscritti` : `Invia ai tavoli scelti (fino a ${recipients})`}
+            <button type="button" disabled={sending || !exactRecipients} onClick={() => send(false)} style={gold}>
+              {sending ? 'Invio...' : target === 'all' ? `Invia a ${recipients} iscritti` : `Invia ai tavoli scelti (${exactRecipients})`}
             </button>
           </div>
           {target === 'groups' && <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', margin: 0 }}>Il numero accanto a ogni tavolo indica quanti hanno accettato la newsletter su quanti membri. Chi è in più tavoli riceve una sola email.</p>}
         </div>
       </div>
+    </div>
+
+    {/* Destinatari: chi ha accettato e chi no */}
+    <aside className="nl-side bg-frame" style={{ ...card, padding: '18px' }}>
+      <h2 className="bg-cartouche" style={h2}>📬 Destinatari</h2>
+      <p style={{ ...p, margin: '0 0 10px' }}>
+        {target === 'all' ? 'Pubblico: tutti gli iscritti.' : selected.length ? `Pubblico: ${selected.map(g => g.name).join(', ')}.` : 'Scegli almeno un tavolo.'}{' '}
+        Riceveranno la newsletter <strong>{exactRecipients}</strong> {exactRecipients === 1 ? 'persona' : 'persone'} (solo chi ha accettato).
+      </p>
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+        {[['target', 'Pubblico scelto'], ['yes', '✓ Accettato'], ['no', '✗ Non ancora'], ['all', 'Tutti']].map(([v, l]) => (
+          <button key={v} type="button" onClick={() => setListFilter(v)} style={{ ...chip(listFilter === v), padding: '5px 11px', fontSize: '0.78rem' }}>{l}</button>
+        ))}
+      </div>
+      <div className="nl-list">
+        {shown.length === 0 && <p style={{ ...p, margin: '8px 0' }}>Nessuno in questo elenco.</p>}
+        {shown.map(u => {
+          const gets = u.newsletter_opt_in && inTarget(u);
+          return (
+            <div key={u.id} className={`nl-row ${gets ? 'nl-row-on' : ''}`} title={gets ? 'Riceverà questa newsletter' : u.newsletter_opt_in ? 'Ha accettato, ma non è nel pubblico scelto' : 'Non ha ancora accettato la newsletter'}>
+              <span className={`nl-dot ${u.newsletter_opt_in ? 'nl-dot-yes' : 'nl-dot-no'}`} aria-hidden>{u.newsletter_opt_in ? '✓' : '✗'}</span>
+              <span style={{ minWidth: 0 }}>
+                <span className="nl-name">{u.name}</span>
+                <span className="nl-email">{u.email}</span>
+              </span>
+              {gets && <span className="nl-tag">riceve</span>}
+            </div>
+          );
+        })}
+      </div>
+      <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)', margin: '10px 0 0' }}>
+        ✓ ha accettato la newsletter · ✗ non ancora (riceve solo gli avvisi delle sessioni a cui è iscritto).
+      </p>
+    </aside>
     </div>
   );
 }
@@ -1792,14 +1833,14 @@ export default function AdminPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-page)' }}>
       <header style={{ background: 'linear-gradient(180deg, var(--bg-card), var(--bg-page))', borderBottom: '2px solid var(--border)', boxShadow: '0 2px 10px rgba(80,60,20,0.08)' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '14px 16px', display: 'flex', gap: '14px', alignItems: 'center' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '14px 24px', display: 'flex', gap: '14px', alignItems: 'center' }}>
           <h1 style={{ margin: 0, marginRight: 'auto', fontFamily: 'Titan One, Luckiest Guy, fantasy', color: 'var(--gold)', fontSize: '1.05rem' }}>🛡️ Pannello Admin</h1>
           <button onClick={() => navigate('/dashboard')} style={{ background: 'none', border: 'none', color: 'var(--gold)', cursor: 'pointer', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontSize: '0.85rem', textDecoration: 'underline' }}>
             ← Dashboard
           </button>
           <ThemeToggle />
         </div>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 16px', display: 'flex', gap: '2px', overflowX: 'auto' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px', display: 'flex', gap: '2px', overflowX: 'auto' }}>
           {tabs.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{
               padding: '10px 18px', fontSize: '0.82rem', fontFamily: 'Atkinson Hyperlegible, system-ui, sans-serif', fontWeight: 600,
@@ -1812,7 +1853,7 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px 16px' }}>
+      <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 24px 48px' }}>
         {tab === 'sessioni' && <SessionsSection locations={locations} />}
         {tab === 'eroi' && <HeroesSection />}
         {tab === 'statistiche' && <StatsSection />}

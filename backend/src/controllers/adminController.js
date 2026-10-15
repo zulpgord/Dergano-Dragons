@@ -226,7 +226,14 @@ const getNewsletterStats = async (req, res) => {
        FROM groups g LEFT JOIN user_groups ug ON ug.group_id = g.id LEFT JOIN users u ON u.id = ug.user_id
        GROUP BY g.id ORDER BY g.name`
     );
-    res.json({ ...r, groups });
+    // Elenco persone con consenso e tavoli, per mostrare accanto alla newsletter chi la riceve e chi no.
+    const { rows: users } = await pool.query(
+      `SELECT u.id, u.name, u.email, u.newsletter_opt_in,
+              COALESCE(array_agg(ug.group_id) FILTER (WHERE ug.group_id IS NOT NULL), '{}') AS group_ids
+       FROM users u LEFT JOIN user_groups ug ON ug.user_id = u.id
+       GROUP BY u.id ORDER BY u.newsletter_opt_in DESC, lower(u.name)`
+    );
+    res.json({ ...r, groups, users });
   } catch (err) {
     console.error('Newsletter stats error:', err);
     res.status(500).json({ error: 'Errore' });
